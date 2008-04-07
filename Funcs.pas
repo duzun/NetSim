@@ -2,18 +2,20 @@ unit Funcs;
 
 interface
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, BufferCL;
 
 const
   WrongData = $8000;
   b_TgtSrc  = $80;
+  b_AddLen  = $40;
   
 type
-  MyStr = TFileStream;
-  PMyStr = ^MyStr;
-  ByteStr = packed array of byte;
+  BFile = File of Byte;
+  ByteStr = TBArray;
 
-function OpenStr(var PStr: PMyStr; FN: String; Create: Boolean):boolean;
+
+function GetByte(var f: BFile): byte;
+function SetByte(var f: BFile; b: byte): boolean;
 
 function chr2num(c: char):word;
 function num2chr(nm: byte):char;
@@ -21,58 +23,90 @@ function str2byte(byte_str: string): Word;
 function byte2str(bt: word; glow: string = ' '): String;
 
 function toISO(data: String; target: byte = 0; source: byte = 0): ByteStr;
+function fromISO(data: ByteStr; var target, source: byte):String;
 {-----------------------------------------------------------------------------}
 implementation
+
 {-----------------------------------------------------------------------------}
-function toISO(data: String; target: byte = 0; source: byte = 0): ByteStr;
+function GetByte(var f: BFile): byte;
+var b: byte;
+begin
+    reset(f);
+    read(f, b);
+    close(f);
+    Result := b;
+end;
+{-----------------------------------------------------------------------------}
+function SetByte(var f: BFile; b: byte): boolean;
+begin
+    rewrite(f);
+    Result:=false;
+    try
+    write(f, b);
+    Result:=true;
+    finally
+    close(f);
+    end;
+end;
+{-----------------------------------------------------------------------------}
+function toISO;
 var r: ByteStr;
+    l, i0, i1: Integer;
     len, i, ld: word;
     b, chk: byte;
 begin
    if(data='') then exit;
-   ld  := Length(data);
-   len := 2 + ld; // len and chk bytes
-   SetLength(r, len + 5); // + tgt, src, len1 and len2 bytes
-   i:=1; b:=0; chk:=0;
+   l   := Length(data);
+
+   len := 2 + ld;    // + len and chk bytes
+   SetLength(r, l + 2 + 3*(l div $ff + 1)); // rezervarea spatiului de memorie suficient
+
+   i:=1;
+   b:=0;
+   chk:=0;
+   i0 := 0;
+
    if(target or source<>0) then begin
       inc(b, b_TgtSrc);
       r[i]:=target; inc(i);
       r[i]:=source; inc(i);
-      inc(len,2);
+      inc(chk, target + source);
    end;
+ repeat
+   ld:=$FF;
+   if l > ld then inc(b, b_AddLen)
+   else ld := l and ld;
+   dec(l, ld);
    if(ld >= (1 shl 6)) then begin
-     r[i]:=0; inc(i);
-     if(ld >= (1 shl 8)) then begin
-        r[i]:=0; inc(i);
-        r[i]:=ld and $FF; inc(i);
-        r[i]:=(ld shr 8) and $FF; inc(i);
-     end else begin
-        r[i]:=ld; inc(i);
-        dec(len, 2);
-     end;
+     r[i]:=ld; inc(i);
+     inc(chk, ld);
    end else begin
      inc(b, ld);
-     dec(len, 3);
    end;
-   r[0]:=b;
-   while(ld<>0)do begin
-      r[i+ld-1]:=ord(data[ld]);
-      dec(ld);
+   r[i0]:=b;  // Baitul de setari
+   inc(chk, b);
+   inc(i0, i);
+   i := ld;
+   while(i<>0)do begin
+      r[i0+i-1]:=ord(data[i]);
+      inc(chk, r[i0+i-1]);
+      dec(i);
    end;
-   for i:=0 to len-2 do inc(chk, r[i]);
-   r[len-1]:=chk;
+   Delete(data, 1, ld);
+   inc(i0, ld+1);
+   r[i0-1]:=chk;
+
+   chk:=0;
+   b:=0;
+   i:=1;
+ until l=0;
+ SetLength(r, i0);
+ Result := r;
 end;
 {-----------------------------------------------------------------------------}
-function OpenStr;
-var Mode: word;
+function fromISO;
 begin
-  Result := false;
-  if(FileExists(FN))then Mode:= fmOpenReadWrite
-     else if(Create)then Mode:= fmCreate
-     else exit;
-  if(PStr = Nil) then new(PStr);
-  PStr^     := MyStr.Create(FN, Mode);
-  Result := true;
+
 end;
 {---------------------------------------------------------------------------------------------------------}
 { Converts a hexadecimal digit character into its' numerical value                                        }
@@ -117,5 +151,6 @@ end;
 {-----------------------------------------------------------------------------}
 {-----------------------------------------------------------------------------}
 {-----------------------------------------------------------------------------}
-{-----------------------------------------------------------------------------}
+
+
 end.

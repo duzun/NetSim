@@ -1,8 +1,8 @@
 object Form1: TForm1
-  Left = 192
-  Top = 113
-  Width = 870
-  Height = 640
+  Left = 188
+  Top = 104
+  Width = 600
+  Height = 427
   Caption = 'Form1'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -13,123 +13,107 @@ object Form1: TForm1
   OldCreateOrder = False
   OnCreate = FormCreate
   DesignSize = (
-    862
-    613)
+    592
+    400)
   PixelsPerInch = 96
   TextHeight = 13
-  object Label1: TLabel
-    Left = 16
-    Top = 16
-    Width = 52
-    Height = 13
-    Caption = 'Addres file:'
-  end
   object Label2: TLabel
-    Left = 16
-    Top = 48
+    Left = 12
+    Top = 10
     Width = 52
     Height = 13
     Caption = 'Stream file:'
   end
   object Label3: TLabel
-    Left = 555
-    Top = 16
-    Width = 37
+    Left = 23
+    Top = 37
+    Width = 36
     Height = 13
-    Caption = 'Source:'
+    Caption = 'Addres:'
   end
-  object Label4: TLabel
-    Left = 557
-    Top = 45
-    Width = 34
-    Height = 13
-    Caption = 'Target:'
-  end
-  object Edit1: TEdit
-    Left = 72
-    Top = 16
+  object Edit2: TEdit
+    Left = 68
+    Top = 10
     Width = 361
     Height = 21
     TabOrder = 0
-    Text = 'Addres.sta'
-  end
-  object Edit2: TEdit
-    Left = 72
-    Top = 48
-    Width = 361
-    Height = 21
-    TabOrder = 1
     Text = 'Stream.str'
   end
-  object Button1: TButton
-    Left = 440
-    Top = 16
-    Width = 75
-    Height = 25
-    Caption = 'Browse'
-    TabOrder = 2
-  end
   object Button2: TButton
-    Left = 440
-    Top = 48
+    Left = 436
+    Top = 10
     Width = 75
     Height = 25
     Caption = 'Browse'
-    TabOrder = 3
+    TabOrder = 1
+    OnClick = Button2Click
   end
   object Memo1: TMemo
     Left = 0
-    Top = 80
-    Width = 865
-    Height = 529
+    Top = 64
+    Width = 297
+    Height = 329
     Anchors = [akLeft, akTop, akRight, akBottom]
     Lines.Strings = (
       '')
     ScrollBars = ssVertical
-    TabOrder = 4
+    TabOrder = 2
   end
   object Edit3: TEdit
-    Left = 592
-    Top = 16
+    Left = 67
+    Top = 37
     Width = 57
     Height = 21
-    TabOrder = 5
+    TabOrder = 3
   end
   object Button3: TButton
-    Left = 648
-    Top = 16
+    Left = 124
+    Top = 37
     Width = 33
     Height = 25
     Caption = 'Set'
-    TabOrder = 6
+    TabOrder = 4
+    OnClick = Button3Click
   end
   object Button4: TButton
-    Left = 784
-    Top = 5
+    Left = 436
+    Top = 37
     Width = 75
     Height = 25
     Anchors = [akTop, akRight]
     Caption = 'Write to Str'
     Default = True
-    TabOrder = 7
+    TabOrder = 5
+    OnClick = Button4Click
   end
-  object Edit4: TEdit
-    Left = 592
-    Top = 45
-    Width = 57
-    Height = 21
-    TabOrder = 8
+  object Memo2: TMemo
+    Left = 301
+    Top = 184
+    Width = 284
+    Height = 217
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Lines.Strings = (
+      '')
+    ScrollBars = ssVertical
+    TabOrder = 6
+  end
+  object Button1: TButton
+    Left = 437
+    Top = 64
+    Width = 75
+    Height = 25
+    Caption = 'Conect'
+    TabOrder = 7
+    OnClick = Button1Click
   end
   object ActionList1: TActionList
-    Left = 696
-    Top = 8
-    object OpenStream: TAction
-      Caption = 'OpenStream'
-      OnExecute = OpenStreamExecute
-    end
-    object OpenAddres: TAction
-      Caption = 'OpenAddres'
-      OnExecute = OpenAddresExecute
-    end
+    Left = 64
+    Top = 144
+  end
+  object Timer1: TTimer
+    Interval = 100
+    OnTimer = Timer1Timer
+    Left = 96
+    Top = 144
   end
 end
