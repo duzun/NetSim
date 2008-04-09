@@ -4,7 +4,7 @@ interface
 uses BufferCL;
 
 type
-  TBStrArray = packed array[0..255] of TBArray;
+  TBStrArray = packed array[0..1024] of TBArray;
 {-----------------------------------------------------------------------------}
   TStrStack = object
     FinitCicle: Boolean;
@@ -40,13 +40,15 @@ begin
 end;
 {-----------------------------------------------------------------------------}
 function TStrStack.GetEach: TBArray;
+var r: TBArray;
 begin
    if(ready<>0) then begin
-     Result := FBuf[FRi];
+     r := FBuf[FRi];
      inc(FRi);
    end else begin
-     Result := GenBAr(0, 0, 7);
+     r := GenBAr(0, 0, 7);
    end;
+   Result := r;
 end;
 {-----------------------------------------------------------------------------}
 procedure TStrStack.SetEach(const Value: TBArray);

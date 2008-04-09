@@ -2,24 +2,29 @@ unit BufferCl;
 
 interface
 const
-  BufSize = 512;  {Trebuie sa fie 2 la o putere}
+  BufSize = 1024;  {Trebuie sa fie 2 la o putere}
   BufMask = BufSize-1;
   
 type
   IndexType = Word;
   TBArray = packed array of byte;
+  PBArray = ^TBArray;
 {-----------------------------------------------------------------------------}
   TBuffer = object
+    FinitCicle: Boolean;
   private
     FBuf: TBArray;
+    FSize:  IndexType;
     FRi, FWi: IndexType;
     procedure SetEach(const Value: byte);
     function  GetEach: byte;
     procedure SetBuf(const Value: TBArray);
     function  GetBuf: TBArray;
+    procedure SetSize(const Value: IndexType);
   public
-    constructor Create();
+    constructor Create(BSize: IndexType = BufSize);
     property Each: byte read GetEach write SetEach;
+    property Size: IndexType read FSize write SetSize;
     property Buf: TBArray read GetBuf write SetBuf;
 
     function ready: IndexType;
@@ -37,29 +42,29 @@ implementation
 {-----------------------------------------------------------------------------}
 Procedure FillBAr;
 begin
+  if Length(BAr)<Index+Len then SetLength(BAr, Index+Len);
   while(Len <> 0) do begin
     BAr[Index] := Mask;
-    dec(Len);
+    inc(Index);  dec(Len);
   end;
 end;
 {-----------------------------------------------------------------------------}
-Function GenBAr;
-var r: TBArray;
-begin
- FillBAr(r, Mask, Index, Len);
- Result := r;
-end;
+Function GenBAr; var r: TBArray;  begin FillBAr(r, Mask, Index, Len); Result := r;end;
 {-----------------------------------------------------------------------------}
 { TBuffer }
 {-----------------------------------------------------------------------------}
-function  TBuffer.ready; begin  Result := BufMask and (FWi - FRi);  end;
+function  TBuffer.ready;
+begin
+  if FWi < FRi then Result := FSize + FWi - FRi
+               else Result := FWi - FRi;
+end;
 {-----------------------------------------------------------------------------}
 procedure TBuffer.Reset; begin  FWi:=0; FRi:=0; end;
 {-----------------------------------------------------------------------------}
 constructor TBuffer.Create;
 begin
   Reset;
-  SetLength(FBuf, BufSize);
+  Size := BSize;
   FBuf[FRi] := 0;
 end;
 {-----------------------------------------------------------------------------}
@@ -68,7 +73,7 @@ begin
    if(ready<>0)then begin
      Result := FBuf[FRi];
      inc(FRi);
-     FRi := BufMask and FRi;
+     if FRi=FSize then FRi := 0;
    end else begin
      Result := 0;
    end;
@@ -78,7 +83,7 @@ procedure TBuffer.SetEach(const Value: byte);
 begin
   FBuf[FWi] := Value;
   inc(FWi);
-  FWi := FWi and BufMask;
+  if FWi=FSize then FWi := 0;
 end;
 {-----------------------------------------------------------------------------}
 function TBuffer.GetBuf: TBArray;
@@ -134,4 +139,12 @@ begin
   Result := r;
 end;
 {-----------------------------------------------------------------------------}
+procedure TBuffer.SetSize(const Value: IndexType);
+begin
+  FSize := Value;
+  SetLength(FBuf, FSize);
+  FRi := FRi mod FSize;
+  FWi := FWi mod FSize;
+end;
+
 end.

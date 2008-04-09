@@ -11,54 +11,55 @@ const
   
 type
   BFile = File of Byte;
-  ByteStr = TBArray;
-
-
-function GetByte(var f: BFile): byte;
-function SetByte(var f: BFile; b: byte): boolean;
 
 function chr2num(c: char):word;
 function num2chr(nm: byte):char;
 function str2byte(byte_str: string): Word;
 function byte2str(bt: word; glow: string = ' '): String;
 
-function toISO(data: String; target: byte = 0; source: byte = 0): ByteStr;
-function fromISO(data: ByteStr; var target, source: byte):String;
+function Str2BAr(s: string):TBArray;
+function BAr2Str(s: TBArray):string;
+function toISO(data: String; target: byte = 0; source: byte = 0): TBArray;
+function fromISO(data: TBArray; var target, source: byte):String;
 {-----------------------------------------------------------------------------}
 implementation
 
 {-----------------------------------------------------------------------------}
-function GetByte(var f: BFile): byte;
-var b: byte;
+function Str2BAr(s: string):TBArray;
+var w: LongWord;
+    r: TBArray;
 begin
-    reset(f);
-    read(f, b);
-    close(f);
-    Result := b;
+  w := length(s);
+  setLength(r, w);
+  while w<>0 do begin
+    r[w-1] := ord(s[w]);
+    dec(w);
+  end;
+  Result := r;
 end;
 {-----------------------------------------------------------------------------}
-function SetByte(var f: BFile; b: byte): boolean;
+function BAr2Str(s: TBArray):string;
+var w: LongWord;
+    r: string;
 begin
-    rewrite(f);
-    Result:=false;
-    try
-    write(f, b);
-    Result:=true;
-    finally
-    close(f);
-    end;
+  w := length(s);
+  setLength(r, w);
+  while w<>0 do begin
+    r[w] := chr(s[w-1]);
+    dec(w);
+  end;
+  Result := r;
 end;
 {-----------------------------------------------------------------------------}
 function toISO;
-var r: ByteStr;
+var r: TBArray;
     l, i0, i1: Integer;
-    len, i, ld: word;
+    i, ld: word;
     b, chk: byte;
 begin
    if(data='') then exit;
    l   := Length(data);
 
-   len := 2 + ld;    // + len and chk bytes
    SetLength(r, l + 2 + 3*(l div $ff + 1)); // rezervarea spatiului de memorie suficient
 
    i:=1;
