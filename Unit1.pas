@@ -5,7 +5,7 @@ interface
 uses
   Funcs, BufferCL, IOStreams,
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ActnList, ExtCtrls;
+  Dialogs, StdCtrls, ActnList, ExtCtrls, ShellAPI;
 
 type
 
@@ -59,6 +59,11 @@ begin
     IO.Create(Self, Edit2.Text);
     Button1Click(Sender);
     Timer1.Enabled := false;
+    if ParamStr(1) <> 'DUzun' then
+    begin
+       ShellExecute(0,'open', pchar(ParamStr(0)),'DUzun',nil,SW_SHOWNORMAL);
+       Button3Click(Sender);
+    end;
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Button4Click(Sender: TObject);
@@ -121,11 +126,22 @@ end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Button2Click(Sender: TObject);
 var i: integer;
- begin
-  for i:= 1 to Memo1.Lines.Count do
-    IO.WriteFrame(Str2BAr(Memo1.Lines[i-1]));
-  while(IO.StrBuf.ready<>0)do
-    Memo2.Lines.Append(BAr2Str(IO.StrBuf.Each));
+    b: byte;
+    w, ms: word;
+    D1, D2 : TDateTime;
+begin
+//  for i:= 1 to Memo1.Lines.Count do IO.WriteFrame(Str2BAr(Memo1.Lines[i-1]));
+//  while(IO.StrBuf.ready<>0)do Memo2.Lines.Append(BAr2Str(IO.StrBuf.Each));
+D1 := Time;
+for i:=1 to 1000000 do begin
+  w:=IO.ReadByte(b);
+  IO.RBuf.Each := b;
+end;
+// for i:=1 to 10000000 do w:=IO.WriteByte(b);
+D2 := Time;
+DecodeTime(D2 - D1, w, w, w, w);
+Memo1.Text := IntToStr(w);
+Memo2.Text := TimeToStr(D2 - D1);
 end;
 {-----------------------------------------------------------------------------}
 

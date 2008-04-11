@@ -9,7 +9,7 @@ const
   ToAll     = $FF;
   PingByte  = $3E;
   AnswerAdd = $40;
-  c_BaudRate  = 30; // bytes/sec
+  c_BaudRate  = 100; // bytes/sec
 
   OK      = $01;
   Already = $02;
@@ -85,6 +85,7 @@ begin
 end;
 {-----------------------------------------------------------------------------}
 function TIOStr.Conect(FileName: ShortString): boolean;
+var w: Word;
 begin
   if FileName = '' then FileName := FN;
   if Conected and (FileName = FN) then begin
@@ -93,6 +94,9 @@ begin
      AssignFile(f, FileName);
      Reset(f);
      Reading   := true;
+     repeat
+      DecodeTime(Time, w, w, w, w);
+     until w=0;
      Conected  := true;
      Result    := true;
   end else Result := false;
