@@ -61,14 +61,13 @@ begin
     Timer1.Enabled := false;
     if ParamStr(1) <> 'DUzun' then
     begin
-       ShellExecute(0,'open', pchar(ParamStr(0)),'DUzun',nil,SW_SHOWNORMAL);
+//       ShellExecute(0,'open', pchar(ParamStr(0)),'DUzun',nil,SW_SHOWNORMAL);
        Button3Click(Sender);
     end;
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Button4Click(Sender: TObject);
 var ba: TBArray;
-    i:  Integer;
 begin
 //  ba := toISO(Memo1.Text, 1, 2);
   ba:= Str2BAr(Memo1.Text);
@@ -126,22 +125,40 @@ end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Button2Click(Sender: TObject);
 var i: integer;
-    b: byte;
-    w, ms: word;
-    D1, D2 : TDateTime;
+    t, s, p, len: byte;
+//    w, ms: word;
+//    D1, D2 : TDateTime;
+    a, c: TBArray;
+    r: string;
 begin
-//  for i:= 1 to Memo1.Lines.Count do IO.WriteFrame(Str2BAr(Memo1.Lines[i-1]));
-//  while(IO.StrBuf.ready<>0)do Memo2.Lines.Append(BAr2Str(IO.StrBuf.Each));
+setlength(a, 100);
+for i:=0 to 99 do a[i]:=i;
+a[0]:=0 or b_TgtSrc;
+a[1]:=97;
+a[3]:=95;
+a[99]:=0;
+p:=1;
+for i:=0 to 98 do inc(a[99],a[i]);
+if ISOSplit(@a, c, s, t)=0 then begin
+  Memo2.Text:=inttostr(ISOSplit(@a, p, len));
+  for i:=0 to length(c)-1 do r:=r+byte2str(c[i]);
+  Memo1.Lines.Append(byte2str(s)+byte2str(t));
+  Memo1.Lines.Append(r);
+end;
+
+{  for i:= 1 to Memo1.Lines.Count do IO.WriteFrame(Str2BAr(Memo1.Lines[i-1]));
+  while(IO.StrBuf.ready<>0)do Memo2.Lines.Append(BAr2Str(IO.StrBuf.Each));
+
+{
 D1 := Time;
-for i:=1 to 1000000 do begin
+for i:=1 to 100000 do begin
   w:=IO.ReadByte(b);
+  w:=IO.WriteByte(b);
   IO.RBuf.Each := b;
 end;
-// for i:=1 to 10000000 do w:=IO.WriteByte(b);
 D2 := Time;
-DecodeTime(D2 - D1, w, w, w, w);
-Memo1.Text := IntToStr(w);
 Memo2.Text := TimeToStr(D2 - D1);
+}
 end;
 {-----------------------------------------------------------------------------}
 

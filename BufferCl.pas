@@ -29,8 +29,10 @@ type
 
     function ready: IndexType;
     function ReadReady(): TBArray;
+    function OnlyRead(var r: TBArray): IndexType;
     function sReadReady(): ShortString;
     procedure Reset;
+    procedure Skip(nr: IndexType = 1);
   end;
   PBuffer = ^TBuffer;
 {-----------------------------------------------------------------------------}
@@ -66,6 +68,12 @@ begin
   Reset;
   Size := BSize;
   FBuf[FRi] := 0;
+end;
+{-----------------------------------------------------------------------------}
+procedure TBuffer.Skip(nr: IndexType);
+begin
+     inc(FRi, nr);
+     if FRi>=FSize then FRi := FRi - FSize;
 end;
 {-----------------------------------------------------------------------------}
 function TBuffer.GetEach: byte;
@@ -146,5 +154,21 @@ begin
   FRi := FRi mod FSize;
   FWi := FWi mod FSize;
 end;
-
+{-----------------------------------------------------------------------------}
+function TBuffer.OnlyRead;
+var i, l: byte;
+    ibak: IndexType;
+begin
+  i := 0;
+  l := ready;
+  SetLength(r, l);
+  ibak := FRi;
+  while(i<l)do begin
+     r[i] := Each;
+     inc(i);
+  end;
+  FRi := ibak;
+  Result := l;
+end;
+{-----------------------------------------------------------------------------}
 end.

@@ -53,6 +53,10 @@ object Form1: TForm1
     Width = 585
     Height = 169
     Anchors = [akLeft, akTop, akRight, akBottom]
+    Lines.Strings = (
+      '1 2 3 4 5 6 7 8 9 0'
+      ''
+      '0 9 8 7 6 5 4 3 2 1 ')
     ScrollBars = ssVertical
     TabOrder = 1
     OnDblClick = AClearTextExecute
@@ -150,7 +154,7 @@ object Form1: TForm1
     end
   end
   object Timer1: TTimer
-    Interval = 200
+    Interval = 300
     OnTimer = Timer1Timer
     Left = 72
     Top = 72
