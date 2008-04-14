@@ -11,6 +11,7 @@ object Form1: TForm1
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
+  OnClose = FormClose
   OnCreate = FormCreate
   DesignSize = (
     592
@@ -25,18 +26,18 @@ object Form1: TForm1
     Caption = 'Stream file:'
   end
   object Label3: TLabel
-    Left = 23
+    Left = 215
     Top = 37
     Width = 36
     Height = 13
     Caption = 'Addres:'
   end
-  object Label1: TLabel
-    Left = 376
-    Top = 16
-    Width = 39
+  object Label4: TLabel
+    Left = 7
+    Top = 37
+    Width = 53
     Height = 13
-    Caption = 'Writeing'
+    Caption = 'My Addres:'
   end
   object Edit2: TEdit
     Left = 68
@@ -62,17 +63,18 @@ object Form1: TForm1
     OnDblClick = AClearTextExecute
   end
   object Edit3: TEdit
-    Left = 67
+    Left = 251
     Top = 37
     Width = 57
     Height = 21
     TabOrder = 2
   end
   object Button3: TButton
-    Left = 374
+    Left = 518
     Top = 29
     Width = 67
     Height = 25
+    Anchors = [akTop, akRight]
     Caption = 'Timmer'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -84,7 +86,7 @@ object Form1: TForm1
     OnClick = Button3Click
   end
   object Button4: TButton
-    Left = 212
+    Left = 420
     Top = 31
     Width = 75
     Height = 25
@@ -105,33 +107,33 @@ object Form1: TForm1
     OnDblClick = AClearTextExecute
   end
   object Button1: TButton
-    Left = 125
+    Left = 317
     Top = 34
     Width = 75
     Height = 25
+    Anchors = [akTop, akRight]
     Caption = 'Conect'
     TabOrder = 6
     OnClick = Button1Click
   end
-  object Button6: TButton
-    Left = 292
-    Top = 31
+  object Button2: TButton
+    Left = 512
+    Top = 0
     Width = 75
     Height = 25
     Anchors = [akTop, akRight]
-    Caption = 'Read'
-    Default = True
+    Caption = 'Experiment'
     TabOrder = 7
-    OnClick = Button6Click
-  end
-  object Button2: TButton
-    Left = 456
-    Top = 32
-    Width = 75
-    Height = 25
-    Caption = 'Button2'
-    TabOrder = 8
     OnClick = Button2Click
+  end
+  object Edit4: TEdit
+    Left = 67
+    Top = 37
+    Width = 57
+    Height = 21
+    TabOrder = 8
+    Text = '1'
+    OnChange = Edit4Change
   end
   object ActionList1: TActionList
     Left = 40

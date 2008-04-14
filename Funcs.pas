@@ -2,15 +2,20 @@ unit Funcs;
 
 interface
 uses
-  Classes, SysUtils, BufferCL;
+  Classes, SysUtils;
 
 const
-  WrongData = $8000;
-  WrongLen  = $4000;
+  WrongData   = $8000;
+  WrongLen    = $4000;
+  NotComplete = $0100;
   b_TgtSrc  = $80;
   b_AddLen  = $40;
   
 type
+  TBArray   = packed array of byte;
+  TBArArray = packed array of TBArray;
+  PBArray   = ^TBArray;
+  PBArArray = ^TBArArray;
   BFile = File of Byte;
 
 function chr2num(c: char):word;
@@ -19,95 +24,185 @@ function str2byte(byte_str: string): Word;
 function byte2str(bt: word; glow: string = ' '): String;
 
 function Copy(var data:TBArray; Index: word = 0; Len: word = 0): TBArray;
+function BArCmp(a1,a2: PBArray; len: word=0): boolean;    // Compara primele len elemmente din a1 si a2
 function Str2BAr(s: string):TBArray;
 function BAr2Str(s: TBArray):string;
-function toISO(data: String; target: byte = 0; source: byte = 0): TBArray;
-function fromISO(data: TBArray; var target, source: byte):String;
 
 function ISOLen(data: PBArray; var p: byte): boolean;
+function ISOCmd(data: PBArray; var src, tgt: byte): byte;
 
-function ISOSplit(frame: PBarray;var p, len, tgt, src: byte): word;            overload;
-function ISOSplit(frame: PBarray;var p, len: byte): word;                      overload;
-function ISOSplit(frame: PBarray;var data: TBarray; var p, len, tgt, src: byte): word;overload;
-function ISOSplit(frame: PBarray;var data: TBarray; var tgt, src: byte): word; overload;
+function ISOForm(var data: TBArray; var p:word; src:byte=0; tgt:byte=0): TBArray;
+function ArISOForm(var data: TBArray; src:byte=0; tgt:byte=0): TBArArray;
+
+function ISOSplit(var frame: TBArray;var p, len, src, tgt: byte): word;            overload;
+function ISOSplit(var frame: TBArray;var p, len: byte): word;                      overload;
+function ISOSplit(var frame: TBArray;var data: TBArray; var p, len, src, tgt: byte): word;overload;
+function ISOSplit(var frame: TBArray;var data: TBArray; var src, tgt: byte): word; overload;
+
+function ArISOSplit(var frame: TBArArray;var src, tgt: byte): TBArray;
 {-----------------------------------------------------------------------------}
 implementation
 {-----------------------------------------------------------------------------}
-function Copy(var data:TBArray; Index: word = 0; Len: word = 0): TBArray;
+function ISOForm(var data: TBArray; var p:word; src:byte=0;tgt:byte=0): TBArray;
 var r: TBArray;
+    i, l: word;
+    len, b, chk: byte;
 begin
-   If (Len = 0)or(Len > length(data)) then Len := Length(data);
-   if Index >= Len then Len:=0;
-   SetLength(r, Len);
-   while(Len>0)do begin
-     dec(Len);
-     r[Len]:=data[Index+Len];
+   l := Length(data);
+   if(l<=p) then exit;
+   i:=1;
+   chk:=0;
+   b:=0;
+   // Len Limit
+   if l > $FF then begin     // Sunt mai multe pakete
+      inc(b, b_AddLen);      // Nu se mai utilizeaza lungimea, fiind implicit 255
+      len := (l-p) div $FF;  // Contorul descrescator pana la 0
+      if(len=0)then begin
+        dec(l, p);           // Lungimea specificata
+      end else begin
+        l := $FF;            // Lungimea implicita
+      end;
+   end else begin            // Un singur paket
+      dec(l, p);
+      len:=l;
    end;
+   SetLength(r, l + 5); // 5 = b0+tgt+src+len+chk
+   // Target / Source
+   if(tgt or src<>0) then begin
+      inc(b, b_TgtSrc);
+      r[i]:=src; inc(i);
+      r[i]:=tgt; inc(i);
+      inc(chk, tgt + src);
+   end;
+   // Len Byte
+   if(len >= (1 shl 6)) then begin
+     r[i]:=len; inc(i);
+     inc(chk, len);
+   end else begin
+     if(len=0)then begin // len e contor, nu lungime
+        r[i]:=l; inc(i);
+        inc(chk, l);
+     end else
+        inc(b, len);
+   end;
+   // Settings Byte
+   r[0]:=b;
+   inc(chk, b);
+   // Coping Data
+   inc(l, i);
+   while(i<l)do begin
+      r[i] := data[p];
+      inc(chk, r[i]);
+      inc(i); inc(p);
+   end;
+   r[i]:=chk;
+   // Final adjustment
+   SetLength(r, i+1);
    Result := r;
 end;
 {-----------------------------------------------------------------------------}
-function ISOSplit(frame: PBarray;var p, len, tgt, src: byte): word;  overload;
-var chc: byte;
-    i: word;
+function ArISOForm(var data: TBArray; src:byte=0;tgt:byte=0): TBArArray;
+var p, l: word;
+    r: TBArArray;
+    i: byte;
+begin
+  p:=0;
+  l:=Length( data );
+  SetLength(r, l div $FF + 1);
+  for i:=0 to Length(r)-1 do r[i] := ISOForm(data, p, src, tgt);
+  Result:=r;
+end;
+{-----------------------------------------------------------------------------}
+function ArISOSplit(var frame: TBArArray;var src, tgt: byte): TBArray;
+var p, l: word;
+    r, d: TBArray;
+    i: byte;
+begin
+    p:=0;
+    l := length(frame);
+    for i:=0 to l-1 do ;
+end;
+{-----------------------------------------------------------------------------}
+function ISOSplit(var frame: TBArray;var p, len, src, tgt: byte): word;  overload;
+var chc, b: byte;
+    i, r: word;
 begin
   Result := WrongLen;
-  if(frame=nil)or(Length(frame^)<3)then exit;
-  len := frame^[p] and $3F;
+  r      := 0;
+  if(Length(frame)<3)then exit;
+  b   := frame[p];
+  len := b and $3F;
   inc(p);
-  if frame^[0] and b_TgtSrc <> 0 then begin
-    src := frame^[p];
-    tgt := frame^[p+1];
+
+  if frame[0] and b_TgtSrc <> 0 then begin
+    src := frame[p];
+    tgt := frame[p+1];
     inc(p, 2);
   end else begin
     tgt:=0; src:=0;
   end;
+
   if len = 0 then begin
-    if (Length(frame^)<p) then exit;
-    len := frame^[p];
+    if (Length(frame)<p) then exit;
+    len := frame[p];
     inc(p);
+  end else if b and b_AddLen <> 0 then begin
+    len:=$FF;
+    inc(r, NotComplete);
   end;
+
   i := len + p;
-  if (i + 1 > Length(frame^)) then begin
-    Result := WrongLen or (i + 1 - Length(frame^));
+  if (i + 1 > Length(frame)) then begin
+    Result := WrongLen or (i + 1 - Length(frame)) or r;
     exit;
   end;
-  chc := frame^[i];
+  chc := frame[i];
+
   while(i>0)do begin
     dec(i);
-    dec(chc, frame^[i]);
+    dec(chc, frame[i]);
   end;
-  if chc <> 0 then Result := WrongData
-              else Result := 0;
+  if chc <> 0 then r := WrongData or r;
+  Result := r;
 end;
 {-----------------------------------------------------------------------------}
-function ISOSplit(frame: PBarray;var data: TBarray; var p, len, tgt, src: byte): word;            overload;
+function ISOSplit(var frame: TBArray;var data: TBarray; var p, len, src, tgt: byte): word;            overload;
 var i: word;
 begin
-  i := ISOSplit(frame, p, len, tgt, src);
-  if i=0 then begin
-    data := Copy(frame^, p, len);
+  i := ISOSplit(frame, p, len, src, tgt);
+  if i and (WrongData or WrongLen) = 0 then begin
+    data := Copy(frame, p, len);
     Result := 0;
   end else Result := i;
 end;
 {-----------------------------------------------------------------------------}
-function ISOSplit(frame: PBarray;var data: TBarray; var tgt, src: byte): word; overload;
+function ISOSplit(var frame: TBArray;var data: TBarray; var src, tgt: byte): word; overload;
 var p, len: byte;
-begin p:=0; Result := ISOSplit(frame, data, p, len, tgt, src); end;
+begin p:=0; Result := ISOSplit(frame, data, p, len, src, tgt); end;
 {-----------------------------------------------------------------------------}
-function ISOSplit(frame: PBarray;var p, len: byte): word;  overload;
+function ISOSplit(var frame: TBArray;var p, len: byte): word;  overload;
 var i: byte;
 begin  Result := ISOSplit(frame, p, len, i, i); end;
+{-----------------------------------------------------------------------------}
+function ISOCmd;
+var p, len: byte;
+begin
+   ISOSplit(data^, p, len, src, tgt);
+   Result := data^[p];
+end;
 {-----------------------------------------------------------------------------}
 function ISOLen(data: PBArray; var p: byte): boolean;
 begin
   Result := false;
   if(data=nil)or(Length(data^)=0)then exit;
-  p := data^[0] and $3F;
-  if p=0 then begin
+  p := data^[0];
+  if p and $3F = 0 then begin
      if (data^[0] and b_TgtSrc) <> 0 then p:=3 else p:=1;
      if Length(data^) <= p then exit;
      p := data^[p];
-  end;
+  end else
+  if (p and b_AddLen <> 0)then p := $FF
+                          else p := p and $3F;
   Result := true;
 end;
 {-----------------------------------------------------------------------------}
@@ -135,66 +230,6 @@ begin
     dec(w);
   end;
   Result := r;
-end;
-{-----------------------------------------------------------------------------}
-function toISO;
-var r: TBArray;
-    l, i0, i1: Integer;
-    i, ld: word;
-    b, chk: byte;
-begin
-   if(data='') then exit;
-   l   := Length(data);
-
-   SetLength(r, l + 2 + 3*(l div $ff + 1)); // rezervarea spatiului de memorie suficient
-
-   i:=1;
-   b:=0;
-   chk:=0;
-   i0 := 0;
-
-   if(target or source<>0) then begin
-      inc(b, b_TgtSrc);
-      r[i]:=target; inc(i);
-      r[i]:=source; inc(i);
-      inc(chk, target + source);
-   end;
- repeat
-   ld:=$FF;
-   if l > ld then inc(b, b_AddLen)
-   else ld := l and ld;
-   dec(l, ld);
-   if(ld >= (1 shl 6)) then begin
-     r[i]:=ld; inc(i);
-     inc(chk, ld);
-   end else begin
-     inc(b, ld);
-   end;
-   r[i0]:=b;  // Baitul de setari
-   inc(chk, b);
-   inc(i0, i);
-   i := ld;
-   while(i<>0)do begin
-      r[i0+i-1]:=ord(data[i]);
-      inc(chk, r[i0+i-1]);
-      dec(i);
-   end;
-   Delete(data, 1, ld);
-   inc(i0, ld+1);
-   r[i0-1]:=chk;
-
-   chk:=0;
-   b:=0;
-   i:=1;
- until l=0;
- SetLength(r, i0);
- Result := r;
-end;
-{-----------------------------------------------------------------------------}
-function fromISO;
-var r: string;
-begin
-
 end;
 {---------------------------------------------------------------------------------------------------------}
 { Converts a hexadecimal digit character into its' numerical value                                        }
@@ -232,10 +267,33 @@ begin
 end;
 {---------------------------------------------------------------------------------------------------------}
 function byte2str; begin Result := num2chr(Byte(bt) shr 4) + num2chr(Byte(bt)) + glow; end;
-
 {-----------------------------------------------------------------------------}
-{-----------------------------------------------------------------------------}
-{-----------------------------------------------------------------------------}
+function BArCmp;
+var m1, m2: word;
+begin
+  m1 := length(a1^);
+  m2 := length(a2^);
+  Result:=false;
+  if(len=0)then if(m1<>m2)then exit else len:=m1 else if(len>m2)or(len>m1)then exit;
 
-
+  while(len>0)do begin
+    dec(len);
+    if a1^[len]<>a2^[len] then exit;
+  end;
+  Result:=true;
+end;
+{-----------------------------------------------------------------------------}
+function Copy(var data:TBArray; Index: word = 0; Len: word = 0): TBArray;
+var r: TBArray;
+begin
+   If (Len = 0)or(Len > length(data)) then Len := Length(data)-Index;
+   if Index + Len > length(data) then Len:=0;
+   SetLength(r, Len);
+   while(Len>0)do begin
+     dec(Len);
+     r[Len]:=data[Index+Len];
+   end;
+   Result := r;
+end;
+{-----------------------------------------------------------------------------}
 end.

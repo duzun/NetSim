@@ -1,14 +1,13 @@
 unit BufferCl;
 
 interface
+uses Funcs;
 const
   BufSize = 1024;  {Trebuie sa fie 2 la o putere}
   BufMask = BufSize-1;
   
 type
   IndexType = Word;
-  TBArray = packed array of byte;
-  PBArray = ^TBArray;
 {-----------------------------------------------------------------------------}
   TBuffer = object
     FinitCicle: Boolean;
@@ -148,7 +147,16 @@ begin
 end;
 {-----------------------------------------------------------------------------}
 procedure TBuffer.SetSize(const Value: IndexType);
+var dif, i: IndexType;
 begin
+{ if Value <= FWi then begin
+   dif:= FWi - Value + 1;
+   if FRi<dif then FRi:=0 else dec(FRi, dif);
+   for i:=FRi to Value-1 do FBuf[i]:=FBuf[i+dif];
+ end else if FRi >= Value then begin
+   dif := FRi - Value + 1;
+   if FWi+dif >= Value then dif:=Value - FWi - 1;
+ end;}
   FSize := Value;
   SetLength(FBuf, FSize);
   FRi := FRi mod FSize;
