@@ -7,11 +7,15 @@ startCommunication= $81;
 stopCommunication = $82;
 
  testPresent = $3E;
- readID      = $1A;
+ cmd_readID  = $1A;
  writeData   = $21;
- startRoutine= $31;
+ cmd_giveAddr= $10;
+ cmd_tellMe  = $11;
+
+ 
  TransferData= $36;
- haveToTell  = $10;
+
+ cmd_No      = $3F;
 implementation
 
 end.

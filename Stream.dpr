@@ -6,7 +6,9 @@ uses
   Funcs in 'Funcs.pas',
   BufferCl in 'BufferCl.pas',
   IOStreams in 'IOStreams.pas',
-  StrStackCl in 'StrStackCl.pas';
+  StrStackCl in 'StrStackCl.pas',
+  uNET in 'uNET.pas',
+  CmdByte in 'CmdByte.pas';
 
 {$R *.res}
 

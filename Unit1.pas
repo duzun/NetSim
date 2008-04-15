@@ -3,43 +3,56 @@ unit Unit1;
 interface
 
 uses
-  Funcs, BufferCL, IOStreams, CmdByte,
+  uNET, Funcs, BufferCL, IOStreams, CmdByte,
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ActnList, ExtCtrls, ShellAPI;
+  Dialogs, StdCtrls, ActnList, ExtCtrls, ShellAPI, ToolWin, ComCtrls,
+  Buttons, Menus, CheckLst;
+
+const
+  Retries = 100;
 
 type
 
   TForm1 = class(TForm)
-    Edit2: TEdit;
-    Label2: TLabel;
     Memo1: TMemo;
-    Edit3: TEdit;
-    Label3: TLabel;
-    Button3: TButton;
     ActionList1: TActionList;
-    Button4: TButton;
     Timer1: TTimer;
     Memo2: TMemo;
-    Button1: TButton;
     AConect: TAction;
     ADisconect: TAction;
     ABrowse: TAction;
-    Button2: TButton;
     AClearText: TAction;
-    Label4: TLabel;
-    Edit4: TEdit;
+    StatusBar1: TStatusBar;
+    MainMenu1: TMainMenu;
+    Action1: TMenuItem;
+    Conection1: TMenuItem;
+    Connect1: TMenuItem;
+    Panel1: TPanel;
+    Button4: TButton;
+    Button2: TButton;
+    Streamstr1: TMenuItem;
+    AConDecon: TAction;
+    ATimmerOnOff: TAction;
+    imer1: TMenuItem;
+    AWriteInfo: TAction;
+    Button1: TButton;
+    AddrList: TCheckListBox;
+    MyAddrEdit: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
     procedure Button4Click(Sender: TObject);
     procedure AConectExecute(Sender: TObject);
     procedure ADisconectExecute(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
     procedure ABrowseExecute(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure AClearTextExecute(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure Edit4Change(Sender: TObject);
+    procedure AConDeconExecute(Sender: TObject);
+    procedure Action1AdvancedDrawItem(Sender: TObject; ACanvas: TCanvas;
+      ARect: TRect; State: TOwnerDrawState);
+    procedure ATimmerOnOffExecute(Sender: TObject);
+    procedure AWriteInfoExecute(Sender: TObject);
+    procedure MyAddrEditExit(Sender: TObject);
   private
     ToClose:boolean;
     { Private declarations }
@@ -51,30 +64,39 @@ var
   Form1: TForm1;
 
 {-----------------------------------------------------------------------------}
-
+function PutText(Sender: TObject; s: String): Boolean;
+{-----------------------------------------------------------------------------}
 implementation
 {$R *.dfm}
-
+{-----------------------------------------------------------------------------}
+function PutText(Sender: TObject; s: String): Boolean;
+begin
+  if Sender = nil then exit;
+  Result:=true;
+  if Sender is TCustomEdit then TCustomEdit(Sender).Text := s else
+  if(Sender is TMenuItem)then TMenuItem(Sender).Caption := s else
+  if(Sender is TLabel)then TLabel(Sender).Caption := s else
+  if(Sender is TButton)then TButton(Sender).Caption := s else
+     Result:=false;
+  s:=Sender.ClassName;
+  s:=s;
+end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.FormCreate(Sender: TObject);
 begin
     ToClose:=false;
-    IO.Create(Self, Edit2.Text);
-    Button1Click(Sender);
-    Timer1.Enabled := true;
-    if ParamStr(1) <> 'DUzun' then
-    begin
-//       ShellExecute(0,'open', pchar(ParamStr(0)),'DUzun',nil,SW_SHOWNORMAL);
-//       Button3Click(Sender);
-    end;
+    IO := TuNET.Create(Self, 'Stream.str');
+    AConectExecute(Sender);
+    ATimmerOnOffExecute(Sender);
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Button4Click(Sender: TObject);
 var ba: TBArray;
-    tgt: byte;
+    tgtL: TBArray;
+    tgt:byte;
+    i: word;
 begin
-  if Edit3.Text='' then tgt:=ToAll
-  else tgt:=strtoint(Edit3.Text);
+
   if tgt = 0 then tgt := ToAll;
 
   ba:= Str2BAr(#2+Memo1.Text);
@@ -86,7 +108,6 @@ var i: word;
     bf: TBArray;
     cmd, src:byte;
 begin
-//  if IO.RBuf.ready > 0 then Memo2.Text := Memo2.Text + IO.RBuf.SReadReady;
   if IO.RSBuf.ready > 0 then with IO.RSBuf do begin
    repeat
      bf:=Each;
@@ -101,45 +122,45 @@ begin
      end;
    until ready = 0;
   end;
+  AWriteInfoExecute(Sender);
   if ToClose then Close;
 end;
 {-----------------------------------------------------------------------------}
-procedure TForm1.Button3Click(Sender: TObject);
-begin
-  Timer1.Enabled := not Timer1.Enabled;
-  if Timer1.Enabled then Button3.Caption := Button3.Caption + ' On'
-                    else Button3.Caption := 'Timmer';
-end;
-
-{-----------------------------------------------------------------------------}
 procedure TForm1.AConectExecute(Sender: TObject);var i: integer;
-begin  i := 100;  while not IO.Conect(Edit2.Text) and (i<>0) do dec(i);end;
+begin  i := Retries;  while not IO.Conect() and (i<>0) do dec(i); PutText(Sender, 'Conected');end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.ADisconectExecute(Sender: TObject);var i: integer;
-begin  i := 100;  while not IO.Disconect and (i<>0) do dec(i);end;
+begin  i := Retries;  while not IO.Disconect and (i<>0) do dec(i); PutText(Sender, 'Disconected');end;
+{-----------------------------------------------------------------------------}
+procedure TForm1.AConDeconExecute(Sender: TObject);
+begin
+  if IO.Conected then begin
+    ADisconectExecute(Sender);
+    PutText(Sender, '&Conect');
+  end else begin
+    AConectExecute(Sender);
+    PutText(Sender, 'Dis&conect');
+  end;
+end;
+{-----------------------------------------------------------------------------}
+procedure TForm1.ATimmerOnOffExecute(Sender: TObject);
+begin
+  Timer1.Enabled := not Timer1.Enabled;
+  if Timer1.Enabled then PutText(Sender, 'Timer On')
+                    else PutText(Sender, 'Timer Off');
+end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.ABrowseExecute(Sender: TObject); var FN: String;
 begin
-  FN := (Sender as TCustomEdit).Text;
+  FN := IO.GetFileName;
   if PromptForFileName(FN,
                        '(str)|*.str|(txt)|*.txt', '*.str',
                        'Chose a streaming file',
                        '', True)
-  then (Sender as TCustomEdit).Text := FN;
+  then PutText(Sender, FN);
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.AClearTextExecute(Sender: TObject); begin (Sender as TCustomEdit).Clear; end;
-{-----------------------------------------------------------------------------}
-procedure TForm1.Button1Click(Sender: TObject);
-begin
-   if IO.Conected then begin
-      ADisconectExecute(nil);
-      Button1.Caption := 'Conect';
-   end else begin
-      AConectExecute(nil);
-      Button1.Caption := 'Disconect';
-   end;
-end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Button2Click(Sender: TObject);
 var i: integer;
@@ -151,6 +172,7 @@ var i: integer;
     r: string;
 begin
 
+exit;
 setlength(a, 1000);
 for i:=0 to 1000 do a[i]:=i;
 w:=0;
@@ -187,7 +209,7 @@ begin
   if not ToClose then begin
     if IO.Conected then begin
       IO.Send(writeData, GenBAr(1,0,1), ToAll);
-      Action:=caNone;
+      Action:=caMinimize;
     end;
     ToClose:=true;
   end else begin
@@ -196,9 +218,39 @@ begin
   end;
 end;
 {-----------------------------------------------------------------------------}
-procedure TForm1.Edit4Change(Sender: TObject);
+procedure TForm1.Action1AdvancedDrawItem(Sender: TObject; ACanvas: TCanvas;
+  ARect: TRect; State: TOwnerDrawState);
 begin
-  IO.MyAddr:=StrToInt(Edit4.Text);
+  if IO.Conected then PutText(Connect1, 'Dis&connect')
+  else PutText(Connect1, '&Connect');
+end;
+{-----------------------------------------------------------------------------}
+procedure TForm1.MyAddrEditExit; begin  IO.ID := MyAddrEdit.Text; end;
+{-----------------------------------------------------------------------------}
+procedure TForm1.AWriteInfoExecute(Sender: TObject);
+var i:word;
+    s:string;
+begin
+  with StatusBar1 do begin
+    if IO.Conected then Panels[0].Text:='Connected'
+                   else Panels[0].Text:='Disconnected';
+    if Timer1.Enabled then Panels[1].Text:='Timer On'
+                       else Panels[1].Text:='Timer Off';
+    Panels[2].Text := 'Addr: '+byte2str(IO.MyAddr);
+    Panels[3].Text := IO.GetFileName;
+    with AddrList do begin
+      while Count < IO.MaxAddr do Items.Append('');
+      while Count > IO.MaxAddr do Items.Delete(AddrList.Count-1);
+      i:=Count;
+      while i >0 do begin
+        Dec(i);
+        s:=BAr2Str(IO.IDs[i]);
+        if s='' then s:=byte2str(i+1);
+        Items.Strings[i] := s;
+      end;
+    end;
+//    MyAddrEdit.Text := IO.ID;
+  end;
 end;
 {-----------------------------------------------------------------------------}
 end.

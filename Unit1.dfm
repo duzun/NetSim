@@ -1,8 +1,8 @@
 object Form1: TForm1
-  Left = 188
-  Top = 104
-  Width = 600
-  Height = 427
+  Left = 190
+  Top = 108
+  Width = 688
+  Height = 578
   Caption = 'Mini LAN Simulatore'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -10,134 +10,124 @@ object Form1: TForm1
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
+  Menu = MainMenu1
   OldCreateOrder = False
+  ShowHint = True
+  OnActivate = AWriteInfoExecute
   OnClose = FormClose
   OnCreate = FormCreate
   DesignSize = (
-    592
-    400)
+    680
+    531)
   PixelsPerInch = 96
   TextHeight = 13
-  object Label2: TLabel
-    Left = 12
-    Top = 10
-    Width = 52
-    Height = 13
-    Caption = 'Stream file:'
-  end
-  object Label3: TLabel
-    Left = 215
-    Top = 37
-    Width = 36
-    Height = 13
-    Caption = 'Addres:'
-  end
-  object Label4: TLabel
-    Left = 7
-    Top = 37
-    Width = 53
-    Height = 13
-    Caption = 'My Addres:'
-  end
-  object Edit2: TEdit
-    Left = 68
-    Top = 10
-    Width = 293
-    Height = 21
-    TabOrder = 0
-    Text = 'Stream.str'
-    OnDblClick = ABrowseExecute
-  end
   object Memo1: TMemo
     Left = 0
-    Top = 64
-    Width = 585
-    Height = 169
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Top = 450
+    Width = 535
+    Height = 61
+    Anchors = [akLeft, akRight, akBottom]
     Lines.Strings = (
-      '1 2 3 4 5 6 7 8 9 0'
-      ''
-      '0 9 8 7 6 5 4 3 2 1 ')
+      '1 2 3 4 5 6 7 8 9 0')
     ScrollBars = ssVertical
-    TabOrder = 1
+    TabOrder = 0
+    WantReturns = False
+    WantTabs = True
     OnDblClick = AClearTextExecute
-  end
-  object Edit3: TEdit
-    Left = 251
-    Top = 37
-    Width = 57
-    Height = 21
-    TabOrder = 2
-  end
-  object Button3: TButton
-    Left = 518
-    Top = 29
-    Width = 67
-    Height = 25
-    Anchors = [akTop, akRight]
-    Caption = 'Timmer'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
-    Font.Style = []
-    ParentFont = False
-    TabOrder = 3
-    OnClick = Button3Click
-  end
-  object Button4: TButton
-    Left = 420
-    Top = 31
-    Width = 75
-    Height = 25
-    Anchors = [akTop, akRight]
-    Caption = 'Write'
-    Default = True
-    TabOrder = 4
-    OnClick = Button4Click
   end
   object Memo2: TMemo
     Left = 0
-    Top = 232
-    Width = 585
-    Height = 169
+    Top = 0
+    Width = 535
+    Height = 455
     Anchors = [akLeft, akTop, akRight, akBottom]
-    ScrollBars = ssVertical
-    TabOrder = 5
+    ReadOnly = True
+    ScrollBars = ssBoth
+    TabOrder = 1
     OnDblClick = AClearTextExecute
   end
-  object Button1: TButton
-    Left = 317
-    Top = 34
-    Width = 75
-    Height = 25
-    Anchors = [akTop, akRight]
-    Caption = 'Conect'
-    TabOrder = 6
-    OnClick = Button1Click
+  object StatusBar1: TStatusBar
+    Left = 0
+    Top = 512
+    Width = 680
+    Height = 19
+    Panels = <
+      item
+        Width = 75
+      end
+      item
+        Width = 70
+      end
+      item
+        Width = 50
+      end
+      item
+        Width = 50
+      end>
   end
-  object Button2: TButton
-    Left = 512
+  object Panel1: TPanel
+    Left = 533
     Top = 0
-    Width = 75
-    Height = 25
-    Anchors = [akTop, akRight]
-    Caption = 'Experiment'
-    TabOrder = 7
-    OnClick = Button2Click
-  end
-  object Edit4: TEdit
-    Left = 67
-    Top = 37
-    Width = 57
-    Height = 21
-    TabOrder = 8
-    Text = '1'
-    OnChange = Edit4Change
+    Width = 145
+    Height = 514
+    Anchors = [akTop, akRight, akBottom]
+    TabOrder = 3
+    DesignSize = (
+      145
+      514)
+    object Button4: TButton
+      Left = 6
+      Top = 279
+      Width = 75
+      Height = 25
+      Anchors = [akTop, akRight]
+      Caption = 'Write'
+      Default = True
+      TabOrder = 0
+      OnClick = Button4Click
+    end
+    object Button2: TButton
+      Left = 6
+      Top = 208
+      Width = 75
+      Height = 25
+      Anchors = [akTop, akRight]
+      Caption = 'Experiment'
+      TabOrder = 1
+      OnClick = Button2Click
+    end
+    object Button1: TButton
+      Left = 8
+      Top = 248
+      Width = 75
+      Height = 25
+      Caption = 'Close'
+      TabOrder = 2
+    end
+    object AddrList: TCheckListBox
+      Left = 0
+      Top = 23
+      Width = 145
+      Height = 137
+      Hint = 'Cui se refera actiunea'
+      Color = clScrollBar
+      ItemHeight = 13
+      Items.Strings = (
+        '')
+      TabOrder = 3
+    end
+    object MyAddrEdit: TEdit
+      Left = 0
+      Top = 1
+      Width = 145
+      Height = 21
+      TabOrder = 4
+      OnExit = MyAddrEditExit
+    end
   end
   object ActionList1: TActionList
-    Left = 40
-    Top = 72
+    Left = 656
+    Top = 16
     object AConect: TAction
       Caption = 'AConect'
       OnExecute = AConectExecute
@@ -148,17 +138,54 @@ object Form1: TForm1
     end
     object ABrowse: TAction
       Caption = 'ABrowse'
+      Hint = 'Fisierul de comunicare'
       OnExecute = ABrowseExecute
     end
     object AClearText: TAction
       Caption = 'AClearText'
       OnExecute = AClearTextExecute
     end
+    object AConDecon: TAction
+      Caption = 'AConDecon'
+      OnExecute = AConDeconExecute
+    end
+    object ATimmerOnOff: TAction
+      Caption = 'ATimmerOnOff'
+      OnExecute = ATimmerOnOffExecute
+    end
+    object AWriteInfo: TAction
+      Caption = 'AWriteInfo'
+      OnExecute = AWriteInfoExecute
+    end
   end
   object Timer1: TTimer
+    Enabled = False
     Interval = 300
     OnTimer = Timer1Timer
-    Left = 72
-    Top = 72
+    Left = 632
+    Top = 16
+  end
+  object MainMenu1: TMainMenu
+    Left = 688
+    Top = 16
+    object Action1: TMenuItem
+      Caption = 'Action'
+      OnAdvancedDrawItem = Action1AdvancedDrawItem
+      object Connect1: TMenuItem
+        Caption = 'Connect/Decon'
+        OnClick = AConDeconExecute
+      end
+      object imer1: TMenuItem
+        Caption = 'Timer'
+        OnClick = ATimmerOnOffExecute
+      end
+    end
+    object Conection1: TMenuItem
+      Caption = 'Conection'
+      object Streamstr1: TMenuItem
+        Action = ABrowse
+        Caption = 'File'
+      end
+    end
   end
 end
