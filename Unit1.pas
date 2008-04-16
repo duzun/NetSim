@@ -25,11 +25,9 @@ type
     StatusBar1: TStatusBar;
     MainMenu1: TMainMenu;
     Action1: TMenuItem;
-    Conection1: TMenuItem;
     Connect1: TMenuItem;
     Panel1: TPanel;
     Button4: TButton;
-    Button2: TButton;
     Streamstr1: TMenuItem;
     AConDecon: TAction;
     ATimmerOnOff: TAction;
@@ -38,26 +36,39 @@ type
     Button1: TButton;
     AddrList: TCheckListBox;
     MyAddrEdit: TEdit;
+    AClose: TAction;
+    CloseAll1: TMenuItem;
+    ACloseAll: TAction;
     procedure FormCreate(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+
     procedure Timer1Timer(Sender: TObject);
-    procedure Button4Click(Sender: TObject);
+
     procedure AConectExecute(Sender: TObject);
     procedure ADisconectExecute(Sender: TObject);
     procedure ABrowseExecute(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
     procedure AClearTextExecute(Sender: TObject);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure AConDeconExecute(Sender: TObject);
-    procedure Action1AdvancedDrawItem(Sender: TObject; ACanvas: TCanvas;
-      ARect: TRect; State: TOwnerDrawState);
+    procedure ACloseExecute(Sender: TObject);
+    procedure ACloseAllExecute(Sender: TObject);
     procedure ATimmerOnOffExecute(Sender: TObject);
     procedure AWriteInfoExecute(Sender: TObject);
+
+    procedure Action1AdvancedDrawItem(Sender: TObject; ACanvas: TCanvas;      ARect: TRect; State: TOwnerDrawState);
     procedure MyAddrEditExit(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
   private
     ToClose:boolean;
+    Cnter: integer;
+    Condition: boolean;
     { Private declarations }
   public
     { Public declarations }
+    tgt: TBArray;
+    procedure ShowMsg(s: TBArray);
+    procedure FormResize(s: TBArray);
+
   end;
 
 var
@@ -84,23 +95,25 @@ end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-    ToClose:=false;
     IO := TuNET.Create(Self, 'Stream.str');
-    AConectExecute(Sender);
+    IO.IDs[0]:=Str2BAr('<To All>');
+    
+    setLength(tgt, 0);
+    ToClose   :=false;
+    Condition :=false;
+    Top  := (Screen.Height-Height)div 2;
+    Left := (Screen.Width-Width) div 2;
+    AConectExecute(MainMenu1.Items[0].Items[1]);
     ATimmerOnOffExecute(Sender);
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Button4Click(Sender: TObject);
 var ba: TBArray;
-    tgtL: TBArray;
-    tgt:byte;
     i: word;
 begin
-
-  if tgt = 0 then tgt := ToAll;
-
   ba:= Str2BAr(#2+Memo1.Text);
-  IO.Send(writeData, ba, tgt);
+  if Length(tgt)=0 then IO.Send(cmd_write, ba)
+                   else IO.ListSend(cmd_write, ba, tgt);
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Timer1Timer(Sender: TObject);
@@ -114,23 +127,23 @@ begin
      i:=length(bf)-1;
      cmd:=bf[1];
      src:=bf[i];
-     setlength(bf, i);
+//     setlength(bf, i);
      case cmd of
         1: Close;
-        2: Memo2.Lines.Append(BAr2Str(Copy(bf,2)));
-        3: ;
+        2: ShowMsg(bf);
+        3: FormResize(bf);
      end;
    until ready = 0;
   end;
   AWriteInfoExecute(Sender);
-  if ToClose then Close;
+  if ToClose then ACloseExecute(Sender);
 end;
 {-----------------------------------------------------------------------------}
-procedure TForm1.AConectExecute(Sender: TObject);var i: integer;
-begin  i := Retries;  while not IO.Conect() and (i<>0) do dec(i); PutText(Sender, 'Conected');end;
+procedure TForm1.AConectExecute(Sender: TObject);
+begin  Cnter := Retries;  while not IO.Conect and (Cnter<>0) do dec(Cnter); PutText(Sender, 'Conected');end;
 {-----------------------------------------------------------------------------}
-procedure TForm1.ADisconectExecute(Sender: TObject);var i: integer;
-begin  i := Retries;  while not IO.Disconect and (i<>0) do dec(i); PutText(Sender, 'Disconected');end;
+procedure TForm1.ADisconectExecute(Sender: TObject);
+begin  Cnter := Retries;  while not IO.Disconect and (Cnter<>0) do dec(Cnter); PutText(Sender, 'Disconected');end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.AConDeconExecute(Sender: TObject);
 begin
@@ -162,60 +175,10 @@ end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.AClearTextExecute(Sender: TObject); begin (Sender as TCustomEdit).Clear; end;
 {-----------------------------------------------------------------------------}
-procedure TForm1.Button2Click(Sender: TObject);
-var i: integer;
-    t, s, p, len: byte;
-    w, ms: word;
-    D1, D2 : TDateTime;
-    a, c: TBArray;
-    bb: TBArArray;
-    r: string;
-begin
-
-exit;
-setlength(a, 1000);
-for i:=0 to 1000 do a[i]:=i;
-w:=0;
-
-bb:=ArISOForm(a, 1, 2);
-
-p:=0;
-if ISOSplit(a, c, s, t)=0 then begin
-  Memo2.Text:=inttostr(ISOSplit(a, p, len));
-  for i:=0 to length(c)-1 do r:=r+byte2str(c[i]);
-  Memo1.Lines.Append(byte2str(s)+byte2str(t));
-  Memo1.Lines.Append(r);
-end;
-
-{  for i:= 1 to Memo1.Lines.Count do IO.WriteFrame(Str2BAr(Memo1.Lines[i-1]));
-  while(IO.StrBuf.ready<>0)do Memo2.Lines.Append(BAr2Str(IO.StrBuf.Each));
-}
-{
-D1 := Time;
-a:=GenBAr($3f, 0, c_MaxReadBuf);
-for i:=1 to 10000 do begin
-  IO.WSBuf.Each := a;
-  IO.WriteSBuf;
-  IO.ReadSBuf;
-end;
-D2 := Time;
-Memo2.Text := TimeToStr(D2 - D1);
-}
-end;
-{-----------------------------------------------------------------------------}
-
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  if not ToClose then begin
-    if IO.Conected then begin
-      IO.Send(writeData, GenBAr(1,0,1), ToAll);
-      Action:=caMinimize;
-    end;
-    ToClose:=true;
-  end else begin
-    if IO.WSBuf.ready<>0 then Action:=caNone;
-    ToClose:=true;
-  end;
+  ACloseExecute(Sender);
+  Action:=caNone;
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Action1AdvancedDrawItem(Sender: TObject; ACanvas: TCanvas;
@@ -238,20 +201,69 @@ begin
                        else Panels[1].Text:='Timer Off';
     Panels[2].Text := 'Addr: '+byte2str(IO.MyAddr);
     Panels[3].Text := IO.GetFileName;
+
     with AddrList do begin
-      while Count < IO.MaxAddr do Items.Append('');
-      while Count > IO.MaxAddr do Items.Delete(AddrList.Count-1);
+      setLength(tgt,0);
+      while Count <= IO.MaxAddr do Items.Append('');
+      while Count-1 > IO.MaxAddr do Items.Delete(AddrList.Count-1);
       i:=Count;
-      while i >0 do begin
+      while i > 0 do begin
         Dec(i);
+        if Checked[i] then IncBAr(tgt, 1, i);
         s:=BAr2Str(IO.IDs[i]);
-        if s='' then s:=byte2str(i+1);
-        Items.Strings[i] := s;
+        if s='' then s:=byte2str(i);
+        if Items.Strings[i] <> s then Items.Strings[i] := s;
       end;
+      if Checked[0] then SetLength(tgt,0);
     end;
-//    MyAddrEdit.Text := IO.ID;
+    if MyAddrEdit.Text <> IO.ID
+    then
+    IO.ID := MyAddrEdit.Text;
   end;
 end;
 {-----------------------------------------------------------------------------}
+procedure TForm1.ACloseExecute(Sender: TObject);
+begin
+  if not ToClose then begin
+    ToClose:=true;
+    Cnter := 1000 div Timer1.Interval * 5;
+    if IO.Conected then IO.Send(cmd_stop, GenBAr(1,0,1), ToAll);
+  end;
+  if not IO.Disconect then Application.Minimize;
+  if IO.Disconect or (Cnter=0) then Application.Terminate;
+  dec(Cnter);
+end;
+{-----------------------------------------------------------------------------}
+procedure TForm1.ACloseAllExecute(Sender: TObject);
+begin
+  if IO.Conected then
+      if length(tgt)=0 then IO.Send(cmd_write, GenBAr(1,0,1), ToAll);
+  ToClose := true;    
+  ACloseExecute(Sender);
+end;
+{-----------------------------------------------------------------------------}
+procedure TForm1.ShowMsg(s: TBArray);
+var src: byte;
+begin
+  src := PopBAr(s);
+  Memo2.Lines.Append(BAr2Str(IO.IDs[src])+':');
+  Memo2.Lines.Append(BAr2Str(Copy(s,2)));
+  Memo2.Lines.Append('~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
+end;
+{-----------------------------------------------------------------------------}
+procedure TForm1.FormResize(s: TBArray);
+begin
+  PopBAr(s);
+  Width:=PopBAr(s,2);
+  Height:=PopBAr(s,2);
+end;
+{-----------------------------------------------------------------------------}
+procedure TForm1.Button1Click(Sender: TObject);
+begin
+  if length(tgt)=0 then IO.Send(cmd_write, GenBAr(1,0,1), ToAll)
+                   else IO.ListSend(cmd_write, GenBAr(1,0,1), tgt);
+end;
+{-----------------------------------------------------------------------------}
+
 end.
 

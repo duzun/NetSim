@@ -2,20 +2,19 @@ unit CmdByte;
 interface
 const
 
+  ToAll     = $FF;
+  cmd_OK = $40;
 
-startCommunication= $81;
-stopCommunication = $82;
+cmd_start= $81;
+cmd_stop = $82;
 
- testPresent = $3E;
- cmd_readID  = $1A;
- writeData   = $21;
- cmd_giveAddr= $10;
- cmd_tellMe  = $11;
+ cmd_isPresent = $3E;
+ cmd_readID    = $1A;
+ cmd_write     = $21;
+ cmd_giveAddr  = $10;
+ cmd_tellMe    = $11;
 
- 
- TransferData= $36;
-
- cmd_No      = $3F;
+ cmd_No        = $7F;
 implementation
 
 end.

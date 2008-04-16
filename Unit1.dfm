@@ -1,8 +1,8 @@
 object Form1: TForm1
   Left = 190
-  Top = 108
-  Width = 688
-  Height = 578
+  Top = 115
+  Width = 413
+  Height = 375
   Caption = 'Mini LAN Simulatore'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,18 +17,17 @@ object Form1: TForm1
   OnClose = FormClose
   OnCreate = FormCreate
   DesignSize = (
-    680
-    531)
+    405
+    328)
   PixelsPerInch = 96
   TextHeight = 13
   object Memo1: TMemo
     Left = 0
-    Top = 450
-    Width = 535
+    Top = 247
+    Width = 260
     Height = 61
+    Hint = 'Aici scrie mesajul pe care doresti sa-l trimiti!'
     Anchors = [akLeft, akRight, akBottom]
-    Lines.Strings = (
-      '1 2 3 4 5 6 7 8 9 0')
     ScrollBars = ssVertical
     TabOrder = 0
     WantReturns = False
@@ -38,8 +37,9 @@ object Form1: TForm1
   object Memo2: TMemo
     Left = 0
     Top = 0
-    Width = 535
-    Height = 455
+    Width = 260
+    Height = 252
+    Hint = 'Aici vin mesajele primite de la altii'
     Anchors = [akLeft, akTop, akRight, akBottom]
     ReadOnly = True
     ScrollBars = ssBoth
@@ -48,8 +48,8 @@ object Form1: TForm1
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Top = 512
-    Width = 680
+    Top = 309
+    Width = 405
     Height = 19
     Panels = <
       item
@@ -66,68 +66,63 @@ object Form1: TForm1
       end>
   end
   object Panel1: TPanel
-    Left = 533
+    Left = 258
     Top = 0
     Width = 145
-    Height = 514
+    Height = 311
     Anchors = [akTop, akRight, akBottom]
     TabOrder = 3
     DesignSize = (
       145
-      514)
+      311)
     object Button4: TButton
       Left = 6
-      Top = 279
+      Top = 276
       Width = 75
       Height = 25
-      Anchors = [akTop, akRight]
+      Anchors = [akRight, akBottom]
       Caption = 'Write'
       Default = True
       TabOrder = 0
       OnClick = Button4Click
     end
-    object Button2: TButton
-      Left = 6
-      Top = 208
-      Width = 75
-      Height = 25
-      Anchors = [akTop, akRight]
-      Caption = 'Experiment'
-      TabOrder = 1
-      OnClick = Button2Click
-    end
     object Button1: TButton
       Left = 8
-      Top = 248
+      Top = 237
       Width = 75
       Height = 25
+      Hint = 'Inchide adresa selectata'
+      Anchors = [akRight, akBottom]
       Caption = 'Close'
-      TabOrder = 2
+      TabOrder = 1
+      OnClick = Button1Click
     end
     object AddrList: TCheckListBox
       Left = 0
       Top = 23
       Width = 145
-      Height = 137
-      Hint = 'Cui se refera actiunea'
+      Height = 184
+      Hint = 'Cui se refera comanda'
+      Anchors = [akLeft, akTop, akBottom]
       Color = clScrollBar
       ItemHeight = 13
       Items.Strings = (
         '')
-      TabOrder = 3
+      TabOrder = 2
     end
     object MyAddrEdit: TEdit
       Left = 0
       Top = 1
       Width = 145
       Height = 21
-      TabOrder = 4
+      Hint = 'Numele meu'
+      TabOrder = 3
       OnExit = MyAddrEditExit
     end
   end
   object ActionList1: TActionList
-    Left = 656
-    Top = 16
+    Left = 72
+    Top = 8
     object AConect: TAction
       Caption = 'AConect'
       OnExecute = AConectExecute
@@ -157,20 +152,32 @@ object Form1: TForm1
       Caption = 'AWriteInfo'
       OnExecute = AWriteInfoExecute
     end
+    object AClose: TAction
+      Caption = 'AClose'
+      OnExecute = ACloseExecute
+    end
+    object ACloseAll: TAction
+      Caption = 'ACloseAll'
+      OnExecute = ACloseAllExecute
+    end
   end
   object Timer1: TTimer
     Enabled = False
-    Interval = 300
+    Interval = 100
     OnTimer = Timer1Timer
-    Left = 632
-    Top = 16
+    Left = 40
+    Top = 8
   end
   object MainMenu1: TMainMenu
-    Left = 688
-    Top = 16
+    Left = 8
+    Top = 8
     object Action1: TMenuItem
       Caption = 'Action'
       OnAdvancedDrawItem = Action1AdvancedDrawItem
+      object CloseAll1: TMenuItem
+        Action = AClose
+        Caption = 'Close All'
+      end
       object Connect1: TMenuItem
         Caption = 'Connect/Decon'
         OnClick = AConDeconExecute
@@ -180,12 +187,9 @@ object Form1: TForm1
         OnClick = ATimmerOnOffExecute
       end
     end
-    object Conection1: TMenuItem
-      Caption = 'Conection'
-      object Streamstr1: TMenuItem
-        Action = ABrowse
-        Caption = 'File'
-      end
+    object Streamstr1: TMenuItem
+      Action = ABrowse
+      Caption = 'File'
     end
   end
 end

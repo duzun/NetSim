@@ -3,14 +3,11 @@ unit uNET;
 interface
 {-----------------------------------------------------------------------------}
 uses
-  Funcs, IOStreams, BufferCL,
+  Funcs, IOStreams, BufferCL, CmdByte,
   ExtCtrls, Classes;
 {-----------------------------------------------------------------------------}
 const
-  ToAll     = $FF;
-  AnswerAdd = $40;
-
-  c_BaudRate    = 250; // frames/sec    - Max = 250
+  c_BaudRate    = 200; // frames/sec    - Max = 250
 {-----------------------------------------------------------------------------}
 type
   TuNET = class(TIOStr)
@@ -18,8 +15,8 @@ type
      RCnter: word;
   private
     FTimer:    TTimer;
+
     SOnRead:   byte;
-    SRSend:    byte;
     SWriting:  boolean;
 
     FBaudRate, BaudCounter: word;
@@ -27,8 +24,8 @@ type
 
     FOwner:    TComponent;
     FID:       ShortString;
-    FIDs:      packed array[1..254] of TBArray;
-    
+    FIDs:      packed array[0..254] of TBArray;
+
     p, len, tgt, src:  byte;
     cBuf: TBArray;
 
@@ -44,7 +41,6 @@ type
     property IDs[i: byte]:TBArray read getIDs write SetIDs;
     property BaudRate: word    read GetBaud     write SetBaud;
     property Conected: boolean read GetConected write SetConected;
-    function CreateConection(FileName: ShortString): byte;
     constructor Create(AOwner: TComponent; FileName: ShortString = '');
 
     function Conect(FileName: ShortString = ''): boolean;
@@ -56,6 +52,8 @@ type
     function SendCmd(Cmd: byte; tgt: byte = ToAll): boolean;
     function SendData(data: TBArray; tgt: byte = ToAll): boolean;
     function Send(cmd: byte; data: TBArray; tgt: byte = ToAll): boolean;
+    function ListSendCmd(Cmd: byte; tgt: TBArray): boolean;
+    function ListSendData(data: TBArray; tgt: TBArray): boolean;
     function ListSend(cmd: byte; data: TBArray; tgt: TBArray): boolean;
 
     Procedure TimerProc(Sender: TObject);
@@ -65,7 +63,7 @@ var
    IO: TuNET;
 implementation
 uses
-   CmdByte, SysUtils;
+   SysUtils;
 {-----------------------------------------------------------------------------}
 { TuNET }
 {-----------------------------------------------------------------------------}
@@ -90,69 +88,54 @@ begin
   Conected := false;
 end;
 {-----------------------------------------------------------------------------}
-function TuNET.CreateConection(FileName: ShortString): byte;
-begin
-  if FileName = '' then FileName := FN;
-  if FileName = '' then Result := IO_Failed
-  else if FileExists(FileName)then begin
-    Result := IO_Already or IO_OK;
-  end else try
-    AssignFile(f, FileName);
-    Result := IO_OK;
-    try    ReWrite(f);
-    except Result := IO_Failed;
-    end;
-  finally  CloseFile(f);
-  end;
-end;
-{-----------------------------------------------------------------------------}
 function TuNET.Conect(FileName: ShortString=''): boolean;
 var w: Word;
 begin
   if FileName = '' then FileName := FN;
   if Conected and (FileName = FN) then Result:=true
-  else if (CreateConection(FileName) and IO_OK <> 0) then begin
-     AssignFile(f, FileName);
-     Reset(f);
-//     Reading   := true;
+  else if (MkFile(FileName) and IO_OK <> 0) then begin
+     Opened:=true;
      SOnRead := 0;
-     SRSend  := 0;
-
      repeat DecodeTime(Time, w, w, w, w); until w<10;
      Result    := true;
      Conected  := true;
-
   end else Result := false;
 end;
 {-----------------------------------------------------------------------------}
 function TuNET.Disconect: boolean;
 begin
-//bufering...
-  if Conected then CloseFile(f);
-  Conected  := false;
-  MyAddr    := 0;
-  Result    := true;
+  if Conected then begin
+    if WSBuf.ready<>0 then Result:=false
+    else begin
+      Opened    := false;
+      Conected  := false;
+      MyAddr    := 0;
+      Result    := true;
+    end;
+  end else Result:=true;
 end;
 {-----------------------------------------------------------------------------}
 procedure TuNET.SetID(const Value: ShortString);
 begin
   if Value = FID then exit;
-  Send(cmd_readID or AnswerAdd, Str2BAr(Value));
+  Send(cmd_readID or cmd_OK, Str2BAr(Value));
   FID := Value;
+  if MyAddr <> 0 then FIDs[MyAddr]:=  Str2BAr(Value);
 end;
 {-----------------------------------------------------------------------------}
-function  TuNET.GetBaud: word;        begin Result := 250 div FBaudRate; end;
+function  TuNET.GetBaud: word;        begin Result := 500 div FBaudRate; end;
 procedure TuNET.SetBaud(Value: word); begin FBaudRate := 500 div Value;  end;
 {-----------------------------------------------------------------------------}
-function TuNET.GetConected: boolean; begin  Result := FTimer.Enabled; end;
-procedure TuNET.SetConected(const Value: boolean);begin FTimer.Enabled := Value; end;
+function TuNET.GetConected: boolean;
+  begin  Result := Opened and FTimer.Enabled; end;
+{-----------------------------------------------------------------------------}
+procedure TuNET.SetConected(const Value: boolean);
+  begin  if (not Value)or(Value and(Opened or Conect))then FTimer.Enabled := Value; end;
 {-----------------------------------------------------------------------------}
 function TuNET.SendData;
 var p, l: word;
 begin
   Result := false;
-//  if (tgt<>ToAll) then exit;
-
   p:=0;
   l:=Length( data );
   while(p<l)do begin
@@ -177,6 +160,32 @@ begin
   Result := SendData(data, tgt);
 end;
 {-----------------------------------------------------------------------------}
+function TuNET.ListSendCmd(Cmd: byte; tgt: TBArray): boolean;
+var i:word;
+    r: boolean;
+begin
+  i:=length(tgt);
+  r:=true;
+  while i>0 do begin
+    dec(i);
+    if not SendCmd(cmd, tgt[i]) then r:=false;;
+  end;
+  Result:=r;
+end;
+{-----------------------------------------------------------------------------}
+function TuNET.ListSendData(data, tgt: TBArray): boolean;
+var i:word;
+    r: boolean;
+begin
+  i:=length(tgt);
+  r:=true;
+  while i>0 do begin
+    dec(i);
+    if not SendData(data, tgt[i]) then r:=false;;
+  end;
+  Result:=r;
+end;
+{-----------------------------------------------------------------------------}
 function TuNET.ListSend(cmd: byte; data, tgt: TBArray): boolean;
 var i:word;
     r: boolean;
@@ -197,10 +206,8 @@ begin
   p:=0;
   if LastRStat = IO_OK then begin
     rez := ISOSplit(RBAr, p, len, src, tgt);
-//    if (src<>ToAll)and(src > MaxAddr) then MaxAddr := src;
-    if (tgt<>ToAll)and(tgt > MaxAddr) then
-     MaxAddr := tgt;
-     rez:=rez;
+    if (src<>ToAll)and(src > MaxAddr) then MaxAddr := src;
+    if (tgt<>ToAll)and(tgt > MaxAddr) then MaxAddr := tgt;
   end else begin
     len:=0;
     src:=0;
@@ -247,49 +254,53 @@ begin
              SendCmd(cmd_giveAddr, src);
              SWriting:=true;
           end;
-          AnswerAdd or cmd_giveAddr:begin MyAddr:=RBAr[p+1]; State:=4;end;
+          cmd_OK or cmd_giveAddr:begin MyAddr:=RBAr[p+1]; State:=4;end;
         end
   end;
   4:begin    // Tell that I'm present
     if(LastRStat=IO_OK)then
-      if(src=$01)and((tgt=$00)or(tgt=MyAddr))and(len>0)then
+      if(src<>MyAddr)and((tgt=$00)or(tgt=MyAddr))and(len>0)then
         case RBAr[p] of
           cmd_tellMe: begin
-            SendCmd(startCommunication, $01);
+            SendCmd(cmd_start, ToAll);
             SWriting:=true;
             State:=5;
           end;
-          testPresent:begin SendCmd(AnswerAdd or testPresent,src);end;
+          cmd_isPresent:begin SendCmd(cmd_OK or cmd_isPresent,src);end;
         end
   end;
   5:begin  // Reading data
     if(LastRStat=IO_OK)then begin
-      if(src<>MyAddr)and((tgt=ToAll)or(tgt=MyAddr))and(len>0)then
+      if((src<>MyAddr)and(tgt=MyAddr)or(tgt=ToAll))and(len>0)then
       case RBAr[p] of   // parsing commands
-        testPresent: SendCmd(RBAr[p] or AnswerAdd, src);
-        startCommunication: if MaxAddr+1=src then inc(MaxAddr);
-        stopCommunication:  if src=MaxAddr then dec(MaxAddr)
-                            else begin
-                              if MyAddr=$01 then begin
-                                Send(AnswerAdd or cmd_giveAddr, GenBAr(src,0,1), MaxAddr);
-                                SendCmd(cmd_readID,src);
-                                dec(MaxAddr);
-                              end;
-                            end;
+        cmd_isPresent: SendCmd(RBAr[p] or cmd_OK, src);
+        cmd_start: if MaxAddr+1=src then inc(MaxAddr);
+        cmd_stop: begin
+           if MyAddr=MaxAddr then begin
+              MyAddr:=src;
+              SendCmd(cmd_readID);
+           end else if MyAddr=$01 then begin
+              Send(cmd_giveAddr or cmd_OK, GenBAr(src,0,1), MaxAddr);
+           end;
+           dec(MaxAddr);
+        end;
         cmd_giveAddr:begin
             inc(MaxAddr);
-            Send(RBAr[p] or AnswerAdd, GenBAr(MaxAddr,0,1), src);
+            Send(cmd_giveAddr or cmd_OK, GenBAr(MaxAddr,0,1), src);
         end;
-        writeData:   begin
+        cmd_write:   begin
             lBAr := Copy(RBAr,p,len);
             setLength(lBAr, len+1);
             lBAr[len]:=src;
             RSBuf.Each := lBAr;
         end;
-        cmd_tellMe:SWriting:=true;
+        cmd_tellMe:begin
+            SWriting:=true;
+            dec(SCicle, SCicle and 1);
+        end;
 
-        AnswerAdd or cmd_giveAddr:MyAddr:=RBAr[p+1];
-        AnswerAdd or cmd_readID: IDs[src]:=Copy(RBAr,p+1,len-1);
+        cmd_OK or cmd_giveAddr:MyAddr:=RBAr[p+1];
+        cmd_OK or cmd_readID: IDs[src]:=Copy(RBAr,p+1,len-1);
         else
       end;
     end;
@@ -331,16 +342,26 @@ begin
 end;
 {-----------------------------------------------------------------------------}
 function TuNET.getIDs(i: byte): TBArray;
+var r: TBArray;
 begin
-  if (i=0) or (i=ToAll) then result:=GenBAr(0,0,0)
-  else result:=FIDs[i];
+  if (i=ToAll) then result:=GenBAr(0,0,0)
+  else begin
+    if length(FIDs[i])=0 then begin
+      r:= GenBAr(ord('<'),0,4);
+//      r[0]:=ord('<');
+      r[1]:=ord(num2chr(i shr 4));
+      r[2]:=ord(num2chr(i));
+      r[3]:=ord('>');
+      Result:=r;
+    end else result:=FIDs[i];
+  end;
 end;
 {-----------------------------------------------------------------------------}
 procedure TuNET.SetIDs(i: byte; const Value: TBArray);
 begin
-  if (i=0) or (i=ToAll) then exit
+  if (i=ToAll) then exit;
+  if (i = MyAddr)and(i<>0) then ID := BAr2Str(Value)
   else FIDs[i]:= Value;
 end;
 {-----------------------------------------------------------------------------}
-
 end.

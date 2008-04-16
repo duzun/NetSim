@@ -25,6 +25,10 @@ function byte2str(bt: word; glow: string = ' '): String;
 
 function Copy(var data:TBArray; Index: word = 0; Len: word = 0): TBArray;
 function BArCmp(a1,a2: PBArray; len: word=0): boolean;    // Compara primele len elemmente din a1 si a2
+function DecBAr(var BAr: TBArray; l: word = 1): word;
+function IncBAr(var BAr: TBArray; l: word = 1; b: byte=0): word;
+function PopBAr(var BAr: TBArray; size: byte = 1): LongWord;
+function ShiftBAr(var BAr: TBArray; size: byte = 1): LongWord;
 function Str2BAr(s: string):TBArray;
 function BAr2Str(s: TBArray):string;
 
@@ -281,6 +285,66 @@ begin
     if a1^[len]<>a2^[len] then exit;
   end;
   Result:=true;
+end;
+{-----------------------------------------------------------------------------}
+function DecBAr(var BAr: TBArray; l: word = 1): word;
+var r: word;
+begin
+  r:= length(BAr);
+  if r<l then r:=0 else dec(r,l);
+  SetLength(BAr, r);
+  Result:=r;
+end;
+{-----------------------------------------------------------------------------}
+function IncBAr(var BAr: TBArray; l: word = 1; b: byte=0): word;
+var r: word;
+begin
+  r:= length(BAr);
+  inc(l, r);
+  SetLength(BAr, l);
+  while r<l do begin
+    BAr[r]:=b;
+    inc(r);
+  end;
+  Result:=r;
+end;
+{-----------------------------------------------------------------------------}
+function PopBAr(var BAr: TBArray; size: byte): LongWord;
+var r: LongWord; l: word;
+begin
+  l:= length(BAr);
+  if (size > 4) then size:=1;
+  r:=0;
+  while (size>0)and(l>0) do begin
+    dec(l);
+    dec(size);
+    r:=(r shl 8) or BAr[l];
+  end;
+  SetLength(BAr, l);
+  Result:=r;
+end;
+{-----------------------------------------------------------------------------}
+function ShiftBAr(var BAr: TBArray; size: byte = 1): LongWord;
+var r: LongWord; l, i: word;
+begin
+  Result:=0;
+  l:= length(BAr);
+  if l=0 then exit;
+  if (size > 4) then size:=1
+  else if size>l then size:=l;
+  r:=0;
+  i:=size;
+  while i>0 do begin
+    dec(i);
+    r:=(r shl 8) or BAr[i];
+  end;
+  dec(l, size);
+  while i<l do begin
+    BAr[i]:=BAr[i+size];
+    inc(i);
+  end;
+  SetLength(BAr, i);
+  Result:=r;
 end;
 {-----------------------------------------------------------------------------}
 function Copy(var data:TBArray; Index: word = 0; Len: word = 0): TBArray;

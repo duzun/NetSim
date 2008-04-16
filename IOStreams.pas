@@ -24,8 +24,9 @@ type
     WBuf, RBuf:   TBuffer;        // Write and Read buffers
   {=========================}
   private
-    RB:        byte;
-    TMPB:      byte;
+    FOpened:  Boolean;
+    procedure SetOpened(const Value: Boolean);
+
   {=========================}
   protected
     F:         BFile;
@@ -34,7 +35,9 @@ type
     LastRStat, LastWStat: word;
   {=========================}
   public
+    property Opened: Boolean read FOpened write SetOpened;
     constructor Create(FileName: ShortString = '');
+    function MkFile(FileName: ShortString): byte;
     function GetFileName: ShortString;
 
     procedure WriteSBuf;
@@ -48,7 +51,7 @@ type
 
 implementation
 uses
-   ExtCtrls;
+   ExtCtrls, SysUtils;
 {-----------------------------------------------------------------------------}
 { TIOStr }
 constructor TIOStr.Create;
@@ -57,7 +60,8 @@ begin
   RBuf.Create(4096);
   WSBuf.Create;
   RSBuf.Create;
-  FN := FileName;
+  FN      := FileName;
+  FOpened := false;
 end;
 {-----------------------------------------------------------------------------}
 procedure TIOStr.ReadSBuf;
@@ -135,4 +139,39 @@ end;
 {-----------------------------------------------------------------------------}
 function TIOStr.GetFileName: ShortString; begin Result:=FN; end;
 {-----------------------------------------------------------------------------}
+function TIOStr.MkFile(FileName: ShortString): byte;
+begin
+  if FileName = '' then FileName := FN;
+  if FileName = '' then Result := IO_Failed
+  else if FileExists(FileName)then begin
+    Result := IO_Already or IO_OK;
+    FN := FileName;
+  end else try
+    AssignFile(f, FileName);
+    Result := IO_OK;
+    FN     := FileName;
+    try    ReWrite(f);
+    except Result := IO_Failed;
+    end;
+  finally
+   begin
+     CloseFile(f);
+     FOpened := false;
+   end;
+  end;
+end;
+{-----------------------------------------------------------------------------}
+procedure TIOStr.SetOpened(const Value: Boolean);
+begin
+   if Value and not FOpened and (MkFile(FN) and IO_OK <> 0)then
+     begin
+       AssignFile(f, FN);
+       Reset(f);
+     end else
+   if not Value and FOpened then begin
+     CloseFile(f);
+   end;
+   FOpened := Value;
+end;
+
 end.
