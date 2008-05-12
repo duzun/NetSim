@@ -1,5 +1,5 @@
 unit uNET;
-
+{ Aici este encapsulat protocolul de comunicare }
 interface
 {-----------------------------------------------------------------------------}
 uses
