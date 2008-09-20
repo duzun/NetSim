@@ -3,7 +3,8 @@ unit BufferCl;
 interface
 uses Funcs;
 const
-  BufSize = 1024;  {Trebuie sa fie 2 la o putere}
+  BufPow  = 10;
+  BufSize = 1 shl BufPow;  {Trebuie sa fie 2 la o putere}
   BufMask = BufSize-1;
   
 type
@@ -12,7 +13,7 @@ type
   TBuffer = object
     FinitCicle: Boolean;
   private
-    FBuf: TBArray;
+    FBuf:   TBArray;
     FSize:  IndexType;
     FRi, FWi: IndexType;
     procedure SetEach(const Value: byte);
@@ -22,14 +23,14 @@ type
     procedure SetSize(const Value: IndexType);
   public
     constructor Create(BSize: IndexType = BufSize);
-    property Each: byte read GetEach write SetEach;
-    property Size: IndexType read FSize write SetSize;
-    property Buf: TBArray read GetBuf write SetBuf;
+    property Each: byte      read GetEach write SetEach;
+    property Size: IndexType read FSize   write SetSize;
+    property Buf:  TBArray   read GetBuf  write SetBuf;
 
-    function ready: IndexType;
-    function ReadReady(): TBArray;
-    function OnlyRead(var r: TBArray): IndexType;
-    function sReadReady(): ShortString;
+    function  ready: IndexType;
+    function  ReadReady(): TBArray;
+    function  OnlyRead(var r: TBArray): IndexType;
+    function  sReadReady(): ShortString;
     procedure Reset;
     procedure Skip(nr: IndexType = 1);
   end;

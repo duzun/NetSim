@@ -1,12 +1,14 @@
 unit CmdByte;
 interface
+
 const
+{-----------------------------------------------------------------------------}
+{ - uNET: Protocol specific Command Bytes - }
+ ToAll         = $FF;
+ cmd_OK        = $40;
 
-  ToAll     = $FF;
-  cmd_OK = $40;
-
-cmd_start= $81;
-cmd_stop = $82;
+ cmd_start     = $81;
+ cmd_stop      = $82;
 
  cmd_isPresent = $3E;
  cmd_readID    = $1A;
@@ -15,6 +17,7 @@ cmd_stop = $82;
  cmd_tellMe    = $11;
 
  cmd_No        = $7F;
+{-----------------------------------------------------------------------------}
 implementation
 
 end.

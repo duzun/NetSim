@@ -4,21 +4,24 @@ interface
 uses BufferCL, Funcs;
 
 type
-  TBStrArray = packed array[0..1024] of TBArray;
 {-----------------------------------------------------------------------------}
-  TStrStack = object
-    FinitCicle: Boolean;
+  TStrStack = class
+    FinitCicle: Boolean; // True pentru a se opri cand s-a ajuns la untimul element din bufer
     Success:    Boolean; // Spune daca ultima operatie a avut loc cu succes
   private
-    FBuf: TBStrArray;
+    FBuf: TBArArray;
     FRi, FWi: byte;
     procedure SetEach(const Value: TBArray);
-    function GetEach: TBArray;
-    function GetArrays(Index: byte): TBArray;
+    function  GetEach: TBArray;
+    function  GetArrays(Index: byte): TBArray;
     procedure SetArrays(Index: byte; const Value: TBArray);
+    function  GetSize: word;
+    procedure SetSize(const Value: word);
   public
-    constructor Create(FinitCic: boolean = true);
+    constructor Create(FinitCic: boolean = true; BufSize: word = 1024);
     procedure Reset;
+    
+    property Size: word read GetSize write SetSize;
     property Each: TBArray read GetEach write SetEach;
     property Arrays[Index: byte]: TBArray read GetArrays write SetArrays;
 
@@ -39,10 +42,11 @@ function  TStrStack.ready; begin Result := FWi - FRi; end;
 {-----------------------------------------------------------------------------}
 procedure TStrStack.Reset; begin FWi:=0; FRi:=0; end;
 {-----------------------------------------------------------------------------}
-constructor TStrStack.Create(FinitCic: boolean = true);
+constructor TStrStack.Create;
 begin
   FinitCicle := FinitCic;
-  Success := true;
+  Success    := true;
+  Size       := BufSize;
   Reset;
 end;
 {-----------------------------------------------------------------------------}
@@ -100,24 +104,30 @@ end;
 {-----------------------------------------------------------------------------}
 function TStrStack.Write(var BAr: TBArray): boolean;
 begin
-  Result := false;
-  if(FinitCicle and (FWi + 1 = FRi) ) then exit;
-  Each := BAr;
-  Result := true;
+  if(FinitCicle and (FWi + 1 = FRi) ) then begin
+     Result := false;
+  end else begin   
+     Each   := BAr;
+     Result := true;
+  end;   
 end;
 {-----------------------------------------------------------------------------}
 function TStrStack.IncR(b: byte): byte;
 begin
-  if(b > FWi - FRi)then b:= FWi - FRi;
+  if(b > FWi - FRi)then b := FWi - FRi;
   inc(FRi, b);
   Result := b;
 end;
 {-----------------------------------------------------------------------------}
 function TStrStack.DecW(b: Byte): Byte;
 begin
-  if(b > FWi - FRi)then b:= FWi - FRi;
+  if(b > FWi - FRi)then b := FWi - FRi;
   dec(FWi, b);
   Result := b;
 end;
+{-----------------------------------------------------------------------------}
+function TStrStack.GetSize: word; begin Result := Length(FBuf); end;
+{-----------------------------------------------------------------------------}
+procedure TStrStack.SetSize(const Value: word);begin SetLength(FBuf, Value); end;
 {-----------------------------------------------------------------------------}
 end.

@@ -1,8 +1,8 @@
 object Form1: TForm1
-  Left = 190
-  Top = 115
+  Left = 742
+  Top = 96
   Width = 413
-  Height = 375
+  Height = 357
   Caption = 'Mini LAN Simulatore'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -18,12 +18,12 @@ object Form1: TForm1
   OnCreate = FormCreate
   DesignSize = (
     405
-    328)
+    303)
   PixelsPerInch = 96
   TextHeight = 13
   object Memo1: TMemo
     Left = 0
-    Top = 247
+    Top = 229
     Width = 260
     Height = 61
     Hint = 'Aici scrie mesajul pe care doresti sa-l trimiti!'
@@ -38,7 +38,7 @@ object Form1: TForm1
     Left = 0
     Top = 0
     Width = 260
-    Height = 252
+    Height = 234
     Hint = 'Aici vin mesajele primite de la altii'
     Anchors = [akLeft, akTop, akRight, akBottom]
     ReadOnly = True
@@ -48,7 +48,7 @@ object Form1: TForm1
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Top = 309
+    Top = 284
     Width = 405
     Height = 19
     Panels = <
@@ -64,20 +64,22 @@ object Form1: TForm1
       item
         Width = 50
       end>
+    OnDblClick = StatusBar1DblClick
+    OnMouseMove = StatusBar1MouseMove
   end
   object Panel1: TPanel
     Left = 258
     Top = 0
     Width = 145
-    Height = 311
+    Height = 284
     Anchors = [akTop, akRight, akBottom]
     TabOrder = 3
     DesignSize = (
       145
-      311)
+      284)
     object Button4: TButton
       Left = 6
-      Top = 276
+      Top = 249
       Width = 75
       Height = 25
       Anchors = [akRight, akBottom]
@@ -88,7 +90,7 @@ object Form1: TForm1
     end
     object Button1: TButton
       Left = 8
-      Top = 237
+      Top = 218
       Width = 75
       Height = 25
       Hint = 'Inchide adresa selectata'
@@ -101,7 +103,7 @@ object Form1: TForm1
       Left = 0
       Top = 23
       Width = 145
-      Height = 184
+      Height = 186
       Hint = 'Cui se refera comanda'
       Anchors = [akLeft, akTop, akBottom]
       Color = clScrollBar
@@ -160,6 +162,10 @@ object Form1: TForm1
       Caption = 'ACloseAll'
       OnExecute = ACloseAllExecute
     end
+    object ARunClone: TAction
+      Caption = 'ARunClone'
+      OnExecute = ARunCloneExecute
+    end
   end
   object Timer1: TTimer
     Enabled = False
@@ -174,17 +180,25 @@ object Form1: TForm1
     object Action1: TMenuItem
       Caption = 'Action'
       OnAdvancedDrawItem = Action1AdvancedDrawItem
-      object CloseAll1: TMenuItem
+      object CloseAll1M: TMenuItem
         Action = AClose
         Caption = 'Close All'
+        ShortCut = 16499
       end
-      object Connect1: TMenuItem
+      object Connect1M: TMenuItem
         Caption = 'Connect/Decon'
+        ShortCut = 8259
         OnClick = AConDeconExecute
       end
-      object imer1: TMenuItem
+      object Timer1M: TMenuItem
         Caption = 'Timer'
+        ShortCut = 8276
         OnClick = ATimmerOnOffExecute
+      end
+      object RunClone1: TMenuItem
+        Caption = 'Run Clone'
+        ShortCut = 16466
+        OnClick = ARunCloneExecute
       end
     end
     object Streamstr1: TMenuItem

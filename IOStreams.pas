@@ -1,27 +1,27 @@
 unit IOStreams;
-
+{ I Nivel: fizic }
 interface
 uses
-  BufferCl, StrStackCl, Funcs, CmdByte;
+//   BufferCl, 
+  StrStackCl, Funcs, CmdByte;
 
 {-----------------------------------------------------------------------------}
 const
-
   c_MaxReadBuf  = 512;
 
-  IO_OK       = $01;
-  IO_NotReady = $02;
-  IO_Already  = $04;
-  IO_Failed   = $08;
-  IO_NoData   = $10;
-  IO_WrongData= $20;
+  IO_OK        = $01;
+  IO_NotReady  = $02;
+  IO_Already   = $04;
+  IO_Failed    = $08;
+  IO_NoData    = $10;
+  IO_WrongData = $20;
 
-type
+type 
 {-----------------------------------------------------------------------------}
   TIOStr = class
   {=========================}
     WSBuf, RSBuf: TStrStack;      // Write and Read string buffers
-    WBuf, RBuf:   TBuffer;        // Write and Read buffers
+//     WBuf, RBuf:   TBuffer;        // Write and Read buffers
   {=========================}
   private
     FOpened:  Boolean;
@@ -56,16 +56,16 @@ uses
 { TIOStr }
 constructor TIOStr.Create;
 begin
-  WBuf.Create;
-  RBuf.Create(4096);
-  WSBuf.Create;
-  RSBuf.Create;
+//   WBuf.Create;
+//   RBuf.Create(4096);
+  WSBuf := TStrStack.Create;
+  RSBuf := TStrStack.Create;
   FN      := FileName;
   FOpened := false;
 end;
 {-----------------------------------------------------------------------------}
 procedure TIOStr.ReadSBuf;
-var i: IndexType;
+var i: word;
     l: Integer;
 begin
 {$I-}
@@ -89,7 +89,7 @@ begin
 end;
 {-----------------------------------------------------------------------------}
 procedure TIOStr.WriteSBuf;
-var i, l: IndexType;
+var i, l: word;
 begin
   WBAr := WSBuf.Arrays[0];
   if (WSBuf.Success) then begin
@@ -167,11 +167,12 @@ begin
      begin
        AssignFile(f, FN);
        Reset(f);
+       FOpened := true;
      end else
    if not Value and FOpened then begin
      CloseFile(f);
+     FOpened := false;
    end;
-   FOpened := Value;
 end;
 
 end.
