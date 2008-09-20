@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 742
-  Top = 96
+  Left = 736
+  Top = 106
   Width = 413
   Height = 357
   Caption = 'Mini LAN Simulatore'

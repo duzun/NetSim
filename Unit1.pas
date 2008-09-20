@@ -105,7 +105,6 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
     IO := TuNET.Create(Self, 'Stream.str');
     IO.IDs[0] := Str2BAr('<To All>');
-    
     setLength(tgt, 0);
     ToClose    := false;
     Condition  := false;
@@ -130,6 +129,7 @@ var i:  word;
     bf: TBArray;
     cmd, src: byte;
 begin
+//  Memo1.Text := IntToStr(random(1000));
   if IO.RSBuf.ready <> 0 then with IO.RSBuf do begin
    repeat
      bf  := Each;
@@ -143,8 +143,8 @@ begin
         3: FormResize(bf);
      end;
    until ready = 0;
+   AWriteInfoExecute(Sender);
   end;
-  AWriteInfoExecute(Sender);
   if ToClose then ACloseExecute(Sender);
 end;
 {-----------------------------------------------------------------------------}

@@ -3,11 +3,8 @@ unit uNET;
 interface
 {-----------------------------------------------------------------------------}
 uses
-  VProtocol, Funcs, IOStreams, BufferCL, CmdByte,
+  VProtocol, Funcs, IOStreams, CmdByte, 
   ExtCtrls, Classes;
-{-----------------------------------------------------------------------------}
-const
-  c_BaudRate    = 200; // frames/sec : Max = 250
 {-----------------------------------------------------------------------------}
 type
   TuNET = class(TVProtocol)
@@ -16,19 +13,14 @@ type
   private
     StateOnRead: word;
 
-    BaudCounter: word;
-    SCicle:    word;
-
     p, len, tgt, src:  byte;
 
   public
     constructor Create(AOwner: TComponent; FileName: ShortString = '');
 
-    procedure ReadISO;
-
     procedure OnConect(); override;
-    procedure OnRead(var State: word);
-    Procedure TimerProc(Sender: TObject);override;
+    procedure OnRead(var State: word); 
+    Procedure OnTimer(Sender: TVProtocol);override;
    end;
 {-----------------------------------------------------------------------------}
 implementation
@@ -40,13 +32,16 @@ begin
   inherited Create(AOwner, FileName);
   LastAddr   := $0;
   BaudCounter:= 0;
-  SCicle     := 0;
+  CycleCounter     := 0;
   BaudRate   := c_BaudRate;
 end;
 {-----------------------------------------------------------------------------}
 procedure TuNET.OnConect();
 begin
   StateOnRead := 0; // begining 
+  MyAddr := 0;  
+  MaxAddr := 0;  
+  LastAddr := 0;  
 end;
 {-----------------------------------------------------------------------------}
 procedure TuNET.OnRead;
@@ -85,18 +80,18 @@ begin
         case RBAr[p] of
           cmd_tellMe: begin
              SendCmd(cmd_giveAddr, src);
-             SWriting:=true;
+             Writing:=true;
           end;
           cmd_OK or cmd_giveAddr:begin MyAddr:=RBAr[p+1]; State:=4;end;
         end
   end;
   4:begin    // Tell that I'm present
     if(LastRStat=IO_OK)then
-      if(src<>MyAddr)and((tgt=$00)or(tgt=MyAddr))and(len>0)then
+      if(src<>MyAddr)and({(tgt=$00)or}(tgt=MyAddr))and(len>0)then
         case RBAr[p] of
           cmd_tellMe: begin
             SendCmd(cmd_start, ToAll);
-            SWriting:=true;
+            Writing:=true;
             State:=5;
           end;
           cmd_isPresent:begin SendCmd(cmd_OK or cmd_isPresent,src);end;
@@ -128,8 +123,8 @@ begin
             RSBuf.Each := lBAr;
         end;
         cmd_tellMe:begin
-            SWriting:=true;
-            dec(SCicle, SCicle and 1);
+            Writing:=true;
+            dec(CycleCounter, CycleCounter and 1);
         end;
 
         cmd_OK or cmd_giveAddr:MyAddr:=RBAr[p+1];
@@ -145,52 +140,41 @@ begin
   end;
 end;
 {-----------------------------------------------------------------------------}
-procedure TuNET.ReadISO;
-var rez: word;
-begin
-  ReadSBuf;                    
-  p:=0;
-  if LastRStat = IO_OK then begin
-    rez := ISOSplit(RBAr, p, len, src, tgt);
-    if (src<>ToAll)and(src > MaxAddr) then MaxAddr := src;
-    if (tgt<>ToAll)and(tgt > MaxAddr) then MaxAddr := tgt;
-  end else begin
-    len:=0;
-    src:=0;
-  end;
-end;
-{-----------------------------------------------------------------------------}
-procedure TuNET.TimerProc(Sender: TObject);
+procedure TuNET.OnTimer;
 begin
    { Reading }
-   if(BaudCounter = 0)then begin 
-      ReadISO;              // --- Data reding  ---
+   if(CycleCounter and 1 = 0)then begin 
+      p:=0;
+      if LastRStat = IO_OK then begin
+        ISOSplit(RBAr, p, len, src, tgt);
+        if (src<>ToAll)and(src > MaxAddr) then MaxAddr := src;
+        if (tgt<>ToAll)and(tgt > MaxAddr) then MaxAddr := tgt;
+      end else begin
+        len:=0;
+        src:=0;
+      end;
       OnRead(StateOnRead); // --- Data parsing ---
-      inc(SCicle);        // --- new Cicle    ---
-      BaudCounter := BaudRate shl 1; // renew counter
-   end else begin
-  { Writing }
-     if(BaudCounter = BaudRate)then 
-     if(SWriting)then begin // --- Have right to write  ---
-       WriteSBuf;          // --- Data writing           ---
-       SWriting:=false;   // --- Can write only one frame ---
-     end else           { $01 is DJ, Boss }
-     if(MyAddr=$01)and(SCicle and 1 = 0)then begin
+
+     { $01 is DJ, Boss }
+     if(MyAddr=$01)and(CycleCounter and 2 = 0)then begin
         inc(LastAddr);     // Who can write?
         if LastAddr > MaxAddr then LastAddr:=0;
         if LastAddr <> MyAddr then begin
           SetLength(lBAr,3);
           lBAr[0]:=cmd_tellMe;
-          lBAr[1]:=lo(SCicle);
-          lBAr[2]:=hi(SCicle);
-
-//          lBAr[1]:=$FF and SCicle;
-//          lBAr[2]:=$FF and (SCicle shr 8);
+//           lBAr[1]:=lo(CycleCounter);
+//           lBAr[2]:=hi(CycleCounter);
+          lBAr[1]:=$FF and CycleCounter;
+          lBAr[2]:=$FF and (CycleCounter shr 8);
           SendData(lBAr, LastAddr);
         end;
-        WriteSBuf;
+        Writing := true; // write in the next Cycle
      end;
-     dec(BaudCounter);
+   end else begin
+  { Writing }
+     if(Writing)then begin // --- Have right to write  ---
+       Reading := true;   // --- Can write only one frame ---
+     end else          
    end;
 end;
 {-----------------------------------------------------------------------------}

@@ -1,7 +1,7 @@
 unit StrStackCl;
 
 interface
-uses BufferCL, Funcs;
+uses Funcs;
 
 type
 {-----------------------------------------------------------------------------}
@@ -53,11 +53,11 @@ end;
 function TStrStack.GetEach: TBArray;
 begin
    if(ready<>0) then begin
-     Result := FBuf[FRi];
+     Result  := FBuf[FRi];
      inc(FRi);
      Success := true;
    end else begin
-     Result := GenBAr(0, 0, 7);
+     Result  := GenBAr(0, 0, 7);
      Success := false;
    end;
 end;

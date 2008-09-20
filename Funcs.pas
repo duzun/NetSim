@@ -16,12 +16,15 @@ type
   TBArArray = packed array of TBArray;
   PBArray   = ^TBArray;
   PBArArray = ^TBArArray;
-  BFile = File of Byte;
+  BFile     = File of Byte;
 
 function chr2num(c: char):word;
 function num2chr(nm: byte):char;
 function str2byte(byte_str: String): Word;
 function byte2str(bt: word; glow: String = ' '): String;
+
+Function GenBAr(Mask: byte = 0; Index: word = 0;Len: word = $FF): TBArray;
+Procedure FillBAr(var BAr: TBArray; Mask: byte; Index: word = 0;Len: word = $FF);
 
 function Copy(var data:TBArray; Index: word = 0; Len: word = 0): TBArray; {Analogic cu Copy pentru String}
 function BArCmp(a1,a2: PBArray; len: word=0): boolean;           {Compara primele len elemmente din a1 si a2}
@@ -359,5 +362,16 @@ begin
    end;
    Result := r;
 end;
+{-----------------------------------------------------------------------------}
+Procedure FillBAr;
+begin
+  if Length(BAr)<Index+Len then SetLength(BAr, Index+Len);
+  while(Len <> 0) do begin
+    BAr[Index] := Mask;
+    inc(Index);  dec(Len);
+  end;
+end;
+{-----------------------------------------------------------------------------}
+Function GenBAr; var r: TBArray;  begin FillBAr(r, Mask, Index, Len); Result := r;end;
 {-----------------------------------------------------------------------------}
 end.

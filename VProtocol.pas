@@ -3,29 +3,39 @@ unit VProtocol;
 interface
 {-----------------------------------------------------------------------------}
 uses
-  Funcs, IOStreams, BufferCL, CmdByte,
+  Funcs, IOStreams, CmdByte,
   ExtCtrls, Classes;
 {-----------------------------------------------------------------------------}
 const
-  c_BaudRate    = 200; // frames/sec : Max = 250
+  c_BaudRate    = 100; // frames/sec : Max = 250
+  c_Reading     = $1;
+  c_Writing     = $2;
 {-----------------------------------------------------------------------------}
 type
 { Class baza pentru protocoalele de comunicare }
   TVProtocol = class(TIOStr)
     MaxAddr, MyAddr: byte; 
   private
+    FBaudRate: word;
+    RWState:   byte;
     FID:       ShortString;
     FIDs:      packed array[0..254] of TBArray;
-    procedure SetBaud(Value: word);
-    function  GetBaud: word;
-    procedure SetID(const Value: ShortString);
     function  GetIDs(i: byte): TBArray;
+    function  GetBaud: word;
+    function  GetReading: boolean;
+    function  GetWriting: boolean;
+    procedure SetID(const Value: ShortString);
     procedure SetIDs(i: byte; const Value: TBArray);
+    procedure SetBaud(Value: word);
+    procedure SetReading(const Value: boolean);
+    procedure SetWriting(const Value: boolean);
   protected
     FTimer:    TTimer;
     FOwner:    TComponent;
-    FBaudRate: word;
-    SWriting:  boolean;
+
+//     p, len, tgt, src:  byte;
+    BaudCounter:  word;
+    CycleCounter: word;
 
     procedure SetConected(const Value: boolean);
     function  GetConected: boolean;
@@ -34,6 +44,8 @@ type
     property IDs[i: byte]:TBArray read GetIDs write SetIDs;
     property BaudRate: word    read GetBaud     write SetBaud;
     property Conected: boolean read GetConected write SetConected;
+    property Reading:  boolean read GetReading  write SetReading;
+    property Writing:  boolean read GetWriting  write SetWriting;
     
     constructor Create(AOwner: TComponent; FileName: ShortString = '');
 
@@ -46,10 +58,11 @@ type
     function ListSendCmd(Cmd: byte; tgt: TBArray): boolean;
     function ListSendData(data: TBArray; tgt: TBArray): boolean;
     function ListSend(cmd: byte; data: TBArray; tgt: TBArray): boolean;
-                 
+
     procedure OnConect();    virtual;
     procedure OnDisconect(); virtual;
-    Procedure TimerProc(Sender: TObject); virtual;
+    procedure OnTimer(Sender: TVProtocol); virtual;
+    Procedure TimerProc(Sender: TObject);  virtual;
    end;
 {-----------------------------------------------------------------------------}
 implementation
@@ -64,7 +77,7 @@ begin
   FOwner     := AOwner;
   MaxAddr    := $0;
   MyAddr     := $0;
-  SWriting   := false;
+  RWState    := 0;
 
   FTimer          := TTimer.Create(FOwner);
   FTimer.Interval := 1;
@@ -80,11 +93,14 @@ begin
   if FileName = '' then FileName := FN;
   if Conected and (FileName = FN) then Result:=true
   else if (MkFile(FileName) and IO_OK <> 0) then begin
-     Opened    := true;
-     repeat DecodeTime(Time, w, w, w, w); until w<10;
-     Result    := true;
-     Conected  := true;
+     BaudCounter  := 0;
+     CycleCounter := 0;
+     Reading      := true;
+     Opened       := true;
      OnConect();
+     repeat DecodeTime(Time, w, w, w, w); until w<10; // time alignment
+     Result       := true;
+     Conected     := true;
   end else Result := false;
 end;
 {-----------------------------------------------------------------------------}
@@ -96,10 +112,18 @@ begin
       Opened    := false;
       Conected  := false;
       MyAddr    := 0;
+      RWState   := 0;
       Result    := true;
       OnDisconect();
     end;
   end else Result:=true;
+end;
+{-----------------------------------------------------------------------------}
+function  TVProtocol.GetConected: boolean;  begin Result := Opened and FTimer.Enabled; end;
+procedure TVProtocol.SetConected(const Value: boolean);
+begin  
+   if (not Value)or(Value and(Opened or Conect()))then 
+      FTimer.Enabled := Value; 
 end;
 {-----------------------------------------------------------------------------}
 procedure TVProtocol.SetID(const Value: ShortString);
@@ -112,12 +136,6 @@ end;
 {-----------------------------------------------------------------------------}
 function  TVProtocol.GetBaud: word;        begin Result := 500 div FBaudRate; end;
 procedure TVProtocol.SetBaud(Value: word); begin FBaudRate := 500 div Value;  end;
-{-----------------------------------------------------------------------------}
-function TVProtocol.GetConected: boolean;
-  begin  Result := Opened and FTimer.Enabled; end;
-{-----------------------------------------------------------------------------}
-procedure TVProtocol.SetConected(const Value: boolean);
-  begin  if (not Value)or(Value and(Opened or Conect))then FTimer.Enabled := Value; end;
 {-----------------------------------------------------------------------------}
 function TVProtocol.SendData;
 var p, l: word;
@@ -209,10 +227,38 @@ begin
   else FIDs[i]:= Value;
 end;
 {-----------------------------------------------------------------------------}
+procedure TVProtocol.OnTimer;begin end;
+procedure TVProtocol.OnDisconect;begin end;
+procedure TVProtocol.OnConect;begin end;
+{-----------------------------------------------------------------------------}
+function TVProtocol.GetReading: boolean;begin Result := RWState and c_Reading <> 0; end;
+function TVProtocol.GetWriting: boolean;begin Result := RWState and c_Writing <> 0; end;
+{-----------------------------------------------------------------------------}
+procedure TVProtocol.SetReading(const Value: boolean);
+begin
+   if (Value) then RWState := c_Reading
+   else RWState := RWState and c_Writing;  
+end;
+{-----------------------------------------------------------------------------}
+procedure TVProtocol.SetWriting(const Value: boolean);
+begin
+   if (Value) then RWState := c_Writing
+   else RWState := RWState and c_Reading;  
+end;
+{-----------------------------------------------------------------------------}
 procedure TVProtocol.TimerProc(Sender: TObject);
-begin  end;
+begin
+   if(BaudCounter = 0)then begin
+     if(Reading) then ReadSBuf  else    // --- Data reading  ---
+     if(Writing) then WriteSBuf else    // --- Data writing  ---
+                                ; 
+     BaudCounter := BaudRate;  // renew counter
+     OnTimer(Self);            // --- Data parsing ---
+     inc(CycleCounter);        // Cycles from connection
+   end else begin
+     dec(BaudCounter);
+   end;
+end;
 {-----------------------------------------------------------------------------}
-procedure TVProtocol.OnDisconect();begin end;
-procedure TVProtocol.OnConect();begin end;
-{-----------------------------------------------------------------------------}
+
 end.

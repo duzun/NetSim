@@ -2,7 +2,6 @@ unit IOStreams;
 { I Nivel: fizic }
 interface
 uses
-//   BufferCl, 
   StrStackCl, Funcs, CmdByte;
 
 {-----------------------------------------------------------------------------}
@@ -18,7 +17,7 @@ const
 
 type 
 {-----------------------------------------------------------------------------}
-  TIOStr = class
+  TIOStr = class(TObject)
   {=========================}
     WSBuf, RSBuf: TStrStack;      // Write and Read string buffers
 //     WBuf, RBuf:   TBuffer;        // Write and Read buffers
@@ -58,6 +57,7 @@ constructor TIOStr.Create;
 begin
 //   WBuf.Create;
 //   RBuf.Create(4096);
+  inherited Create; 
   WSBuf := TStrStack.Create;
   RSBuf := TStrStack.Create;
   FN      := FileName;
