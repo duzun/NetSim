@@ -1,5 +1,16 @@
 unit uNET;
-{ Aici este encapsulat protocolul de comunicare }
+{ Aici este encapsulat protocolul de comunicare cu moderator }
+{-----------------------------------------------------------------------------
+  Descriere: 
+  Inainte de a trimite informatii, fiecare participant cere "voie" 
+  de la moderator. 
+  Moderatorul la fel atribuie adrese calculatoarelor nou incluse in comunicare. 
+  Moderatorul totdeauna are adresa $01.
+  Cand moderatorul "pleaca", locul lui il ocupa ultimul calculator (cu adresa maxima).
+  Timpul este impartit in 2 cicluri, unul pentru moderator si altul pentru ceilalti.
+  Un ciclu este impartit in 2 perioade: de scriere si de citire. 
+  La perioada de citire participa toti, indiferent de ciclu. 
+ -----------------------------------------------------------------------------}
 interface
 {-----------------------------------------------------------------------------}
 uses
@@ -12,15 +23,16 @@ type
      RCnter: word;
   private
     StateOnRead: word;
-
     p, len, tgt, src:  byte;
 
   public
     constructor Create(AOwner: TComponent; FileName: ShortString = '');
 
+    function getState():word;
+    
     procedure OnConect(); override;
     procedure OnRead(var State: word); 
-    Procedure OnTimer(Sender: TVProtocol);override;
+    procedure TimerProc(Sender: TObject); 
    end;
 {-----------------------------------------------------------------------------}
 implementation
@@ -30,11 +42,11 @@ implementation
 constructor TuNET.Create;
 begin
   inherited Create(AOwner, FileName);
-  LastAddr   := $0;
-  BaudCounter:= 0;
-  CycleCounter     := 0;
-  BaudRate   := c_BaudRate;
+  LastAddr    := $0;
+  OnTimer     := TimerProc;
 end;
+{-----------------------------------------------------------------------------}
+function TuNET.getState: word; begin Result := StateOnRead; end;
 {-----------------------------------------------------------------------------}
 procedure TuNET.OnConect();
 begin
@@ -140,7 +152,7 @@ begin
   end;
 end;
 {-----------------------------------------------------------------------------}
-procedure TuNET.OnTimer;
+procedure TuNET.TimerProc;
 begin
    { Reading }
    if(CycleCounter and 1 = 0)then begin 
@@ -162,8 +174,6 @@ begin
         if LastAddr <> MyAddr then begin
           SetLength(lBAr,3);
           lBAr[0]:=cmd_tellMe;
-//           lBAr[1]:=lo(CycleCounter);
-//           lBAr[2]:=hi(CycleCounter);
           lBAr[1]:=$FF and CycleCounter;
           lBAr[2]:=$FF and (CycleCounter shr 8);
           SendData(lBAr, LastAddr);

@@ -62,6 +62,9 @@ object Form1: TForm1
         Width = 50
       end
       item
+        Width = 40
+      end
+      item
         Width = 50
       end>
     OnDblClick = StatusBar1DblClick
@@ -120,6 +123,14 @@ object Form1: TForm1
       Hint = 'Numele meu'
       TabOrder = 3
       OnExit = MyAddrEditExit
+    end
+    object CheckBox1: TCheckBox
+      Left = 88
+      Top = 216
+      Width = 97
+      Height = 17
+      Caption = 'Log'
+      TabOrder = 4
     end
   end
   object ActionList1: TActionList

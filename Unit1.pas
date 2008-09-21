@@ -9,7 +9,7 @@ uses
   Buttons, Menus, CheckLst;
 
 const
-  Retries = 100;
+  Retries = 10;
 
 type
 
@@ -41,6 +41,7 @@ type
     ACloseAll: TAction;
     ARunClone: TAction;
     RunClone1: TMenuItem;
+    CheckBox1: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
 
@@ -104,7 +105,7 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
     IO := TuNET.Create(Self, 'Stream.str');
-    IO.IDs[0] := Str2BAr('<To All>');
+    IO.IDs[0]  := Str2BAr('<To All>');
     setLength(tgt, 0);
     ToClose    := false;
     Condition  := false;
@@ -129,7 +130,7 @@ var i:  word;
     bf: TBArray;
     cmd, src: byte;
 begin
-//  Memo1.Text := IntToStr(random(1000));
+
   if IO.RSBuf.ready <> 0 then with IO.RSBuf do begin
    repeat
      bf  := Each;
@@ -137,14 +138,17 @@ begin
      cmd := bf[1];
      src := bf[i];
 //     setlength(bf, i);
+     if CheckBox1.Checked then begin
+        Memo2.Lines.Append(BAr2Str(bf));
+     end;
      case cmd of
         1: Close;
         2: ShowMsg(bf);
         3: FormResize(bf);
      end;
    until ready = 0;
-   AWriteInfoExecute(Sender);
   end;
+  AWriteInfoExecute(Sender);
   if ToClose then ACloseExecute(Sender);
 end;
 {-----------------------------------------------------------------------------}
@@ -222,8 +226,8 @@ begin
     if Timer1.Enabled then Panels[1].Text := 'Timer On'
                       else Panels[1].Text := 'Timer Off';
     Panels[2].Text := 'Addr: '+byte2str(IO.MyAddr);
-    Panels[3].Text := ExtractFileName(IO.GetFileName);
-
+    Panels[3].Text := IntToStr(IO.getCycleCount())+':'+IntToStr(IO.getBaudCount());
+    Panels[4].Text := ExtractFileName(IO.GetFileName);
 
     with AddrList do begin
       setLength(tgt,0);
@@ -311,7 +315,8 @@ begin
     1:AConDeconExecute(P);
     2:ATimmerOnOffExecute(P);
     3:;
-    4:ABrowseExecute(P);
+    4:IO.ResetCycleCount;
+    5:ABrowseExecute(P);
     end;
 end;
 

@@ -8,7 +8,8 @@ uses
   IOStreams in 'IOStreams.pas',
   StrStackCl in 'StrStackCl.pas',
   uNET in 'uNET.pas',
-  CmdByte in 'CmdByte.pas';
+  CmdByte in 'CmdByte.pas',
+  VProtocol in 'VProtocol.pas';
 
 {$R *.res}
 

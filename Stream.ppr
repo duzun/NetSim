@@ -1,0 +1,49 @@
+[Config]
+Compilator.SaveAll=0
+Compilator.Capture=0
+Compilator.HideOutput=0
+Compilator.LogType=0
+DefaultCPIndex=0
+LogtoEnd=0
+DontOpen=0
+AbsolutePath=0
+FileFormat=0
+ProjectFilesOnly=0
+[Project tree]
+Stream
+	+Folder
+		CmdByte.pas
+		Funcs.pas
+		IOStreams.pas
+		StrStackCl.pas
+		uNET.pas
+		Unit1.pas
+		VProtocol.pas
+[Open project files]
+0=VProtocol.pas
+1=uNET.pas
+2=StrStackCl.pas
+3=IOStreams.pas
+4=Funcs.pas
+[Selected Project Files]
+Main=
+Selected=uNET.pas
+[VProtocol.pas]
+TopLine=81
+Caret=24,97
+Mark1=12,11
+[uNET.pas]
+TopLine=97
+Caret=33,111
+Mark1=11,74
+[StrStackCl.pas]
+TopLine=1
+Caret=20,8
+Mark1=16,105
+Mark2=20,65
+[IOStreams.pas]
+TopLine=140
+Caret=11,176
+[Funcs.pas]
+TopLine=1
+Caret=1,1
