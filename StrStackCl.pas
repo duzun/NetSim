@@ -5,7 +5,7 @@ uses Funcs;
 
 type
 {-----------------------------------------------------------------------------}
-  TStrStack = class
+  TStrStack = class(TObject)
     FinitCicle: Boolean; // True pentru a se opri cand s-a ajuns la untimul element din bufer
     Success:    Boolean; // Spune daca ultima operatie a avut loc cu succes
   private
@@ -19,7 +19,7 @@ type
     procedure SetSize(const Value: word);
   public
     constructor Create(FinitCic: boolean = true; BufSize: word = 1024);
-    procedure Reset;
+    procedure Reset; // Reseteaza indicii de citire/scriere
     
     property Size: word read GetSize write SetSize;
     property Each: TBArray read GetEach write SetEach;
@@ -44,6 +44,7 @@ procedure TStrStack.Reset; begin FWi:=0; FRi:=0; end;
 {-----------------------------------------------------------------------------}
 constructor TStrStack.Create;
 begin
+  inherited Create;
   FinitCicle := FinitCic;
   Success    := true;
   Size       := BufSize;
@@ -67,31 +68,29 @@ begin
   if(FinitCicle and (FWi + 1 = FRi) ) then exit;
   FBuf[FWi] := Value;
   inc(FWi);
-  Success := true;
+  Success   := true;
 end;
 {-----------------------------------------------------------------------------}
 function TStrStack.GetArrays(Index: byte): TBArray;
 begin
-   if(Index<ready) then begin
-     Result := FBuf[FRi+Index];
-     Success := true;
-   end else begin
-     Result := GenBAr(0, 0, 0);
-     Success := false;
-   end;
+   Success := Index<ready;
+   if Success then Result := FBuf[FRi+Index]
+              else Result := GenBAr(0, 0, 0);
 end;
 {-----------------------------------------------------------------------------}
 procedure TStrStack.SetArrays(Index: byte; const Value: TBArray);
 begin
-  if(Index<ready) then begin
+  if(Index<ready) then      // atribuie
+  begin
     FBuf[FRi+Index] := Value;
     Success := true;
   end else
-    if (Index=ready) then begin
-      Each := Value;
-      Success := true;
-    end else
-      Success := false;
+  if (Index=ready) then    // adauga
+  begin
+    Each    := Value;
+    Success := true;
+  end else                 // :-(
+    Success := false;
 end;
 {-----------------------------------------------------------------------------}
 function TStrStack.Read(var BAr: TBArray): boolean;
@@ -128,6 +127,9 @@ end;
 {-----------------------------------------------------------------------------}
 function TStrStack.GetSize: word; begin Result := Length(FBuf); end;
 {-----------------------------------------------------------------------------}
-procedure TStrStack.SetSize(const Value: word);begin SetLength(FBuf, Value); end;
+procedure TStrStack.SetSize(const Value: word);
+begin
+   SetLength(FBuf, Value);
+end;
 {-----------------------------------------------------------------------------}
 end.

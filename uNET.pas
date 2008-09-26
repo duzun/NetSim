@@ -20,7 +20,7 @@ uses
 type
   TuNET = class(TVProtocol)
      LastAddr: byte;
-     RCnter: word;
+     RetryCounter: word;
   private
     StateOnRead: word;
     p, len, tgt, src:  byte;
@@ -58,36 +58,36 @@ end;
 {-----------------------------------------------------------------------------}
 procedure TuNET.OnRead;
 begin
-    case LastRStat of
-     IO_Failed: State:=0;
+    case ReadResult of
+     IO_Failed: State := 0; // Reinitializare la eroare
      IO_NoData: ;
      IO_OK:     ;
     end;
   case State of
-  0:begin    // Initiere
-    RCnter:=4;
-    case LastRStat of
-     IO_OK:     State:=1;
-     IO_NoData: State:=2;
-     IO_Failed: exit; // Mai citeste o data
+  0:begin  // Initializare
+    RetryCounter := 4; // Nr de incercari
+    case ReadResult of
+     IO_OK:     State := 1; // Ma conectez...
+     IO_NoData: State := 2; // Nimeni conectat
+     IO_Failed: exit;       // Mai citeste o data
     end;
   end;
-  1:begin  // Conect
-    dec(RCnter);
-    case LastRStat of
-     IO_OK:     State:=3;
-     IO_NoData: if(RCnter=0)then State:=2 else exit;
+  1:begin  // Conectare
+    dec(RetryCounter);
+    case ReadResult of
+     IO_OK:     State := 3;
+     IO_NoData: if(RetryCounter=0)then State:=2 else exit;
      IO_Failed: {???};
     end;
     OnRead(State);
   end;
-  2:begin  // Nobody is online
+  2:begin  // Nimeni online
     MaxAddr := $01;
     MyAddr  := $01;
     State   := 5;
   end;
-  3:begin  // Wait for Addr
-    if(LastRStat=IO_OK)then
+  3:begin  // Asteapta adresa
+    if(ReadResult=IO_OK)then
       if(src=$01)and(tgt=$00)and(len>0)then
         case RBAr[p] of
           cmd_tellMe: begin
@@ -97,8 +97,8 @@ begin
           cmd_OK or cmd_giveAddr:begin MyAddr:=RBAr[p+1]; State:=4;end;
         end
   end;
-  4:begin    // Tell that I'm present
-    if(LastRStat=IO_OK)then
+  4:begin    // Spune tuturor ca sunt prezent
+    if(ReadResult=IO_OK)then
       if(src<>MyAddr)and({(tgt=$00)or}(tgt=MyAddr))and(len>0)then
         case RBAr[p] of
           cmd_tellMe: begin
@@ -109,8 +109,8 @@ begin
           cmd_isPresent:begin SendCmd(cmd_OK or cmd_isPresent,src);end;
         end
   end;
-  5:begin  // Reading data
-    if(LastRStat=IO_OK)then begin
+  5:begin  // Citire date
+    if(ReadResult=IO_OK)then begin
       if((src<>MyAddr)and(tgt=MyAddr)or(tgt=ToAll))and(len>0)then
       case RBAr[p] of   // parsing commands
         cmd_isPresent: SendCmd(RBAr[p] or cmd_OK, src);
@@ -146,7 +146,7 @@ begin
     end;
   end;
   else
-     if LastRStat = IO_OK then begin
+     if ReadResult = IO_OK then begin
         RSBuf.Each := RBAr;
      end;
   end;
@@ -157,7 +157,7 @@ begin
    { Reading }
    if(CycleCounter and 1 = 0)then begin 
       p:=0;
-      if LastRStat = IO_OK then begin
+      if ReadResult = IO_OK then begin
         ISOSplit(RBAr, p, len, src, tgt);
         if (src<>ToAll)and(src > MaxAddr) then MaxAddr := src;
         if (tgt<>ToAll)and(tgt > MaxAddr) then MaxAddr := tgt;

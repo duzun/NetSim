@@ -85,6 +85,11 @@ rem --------------------------------------------------------------------------
       if not exist ".\Bak\%bak_dir%\." md ".\Bak\%bak_dir%"
       if not exist ".\Bak\%bak_dir%\." goto e
       
+      if exist *.exe (
+         Echo. & Echo  ~ UPX EXEs . . . ~
+         Echo.
+         start /wait /b /high upx -k --best *.exe
+      )   
       Echo. & Echo  ~ Backing Up Files . . . ~
       Echo.
       %bak_func% log_prep

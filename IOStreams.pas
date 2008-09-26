@@ -9,41 +9,42 @@ const
   c_MaxReadBuf  = 512;
 
   IO_OK        = $01;
-  IO_NotReady  = $02;
-  IO_Already   = $04;
-  IO_Failed    = $08;
-  IO_NoData    = $10;
-  IO_WrongData = $20;
+  IO_Failed    = $02;
+  IO_NoData    = $04;
+  IO_WrongData = $08;
+  IO_Already   = $10;
+  IO_NotReady  = $20;
 
 type 
 {-----------------------------------------------------------------------------}
   TIOStr = class(TObject)
   {=========================}
     WSBuf, RSBuf: TStrStack;      // Write and Read string buffers
-//     WBuf, RBuf:   TBuffer;        // Write and Read buffers
   {=========================}
   private
     FOpened:  Boolean;
     procedure SetOpened(const Value: Boolean);
-
+    procedure SetFileName(const Value: ShortString);
   {=========================}
   protected
-    F:         BFile;
-    FN:        ShortString;       // Conection FileName
+    F:  BFile;                    // File Pointer
+    FN: ShortString;              // Conection FileName
     RBAr, WBAr, lBAr: TBArray;    // Byte Buffers
-    LastRStat, LastWStat: word;
+    ReadResult, WriteResult: word;
   {=========================}
   public
     property Opened: Boolean read FOpened write SetOpened;
-    constructor Create(FileName: ShortString = '');
-    function MkFile(FileName: ShortString): byte;
-    function GetFileName: ShortString;
+    Property FileName: ShortString read FN write SetFileName;
+    
+    function Open(NameOfFile: ShortString): Boolean;
+    function MkFile(NameOfFile: ShortString): word;
 
-    procedure WriteSBuf;
-    procedure ReadSBuf;
+    function WriteSBuf: word;
+    function ReadSBuf: word;
 
     function WriteByte(b: byte; poz: byte = 0): word;
     function ReadByte(var b: byte; poz: byte = 0): word;
+    constructor Create(NameOfFile: ShortString = '');
   {=========================}
   end;
 {-----------------------------------------------------------------------------}
@@ -55,16 +56,14 @@ uses
 { TIOStr }
 constructor TIOStr.Create;
 begin
-//   WBuf.Create;
-//   RBuf.Create(4096);
-  inherited Create; 
-  WSBuf := TStrStack.Create;
-  RSBuf := TStrStack.Create;
-  FN      := FileName;
+  inherited Create;
+  WSBuf   := TStrStack.Create;
+  RSBuf   := TStrStack.Create;
+  FN      := NameOfFile;
   FOpened := false;
 end;
 {-----------------------------------------------------------------------------}
-procedure TIOStr.ReadSBuf;
+function TIOStr.ReadSBuf;
 var i: word;
     l: Integer;
 begin
@@ -76,19 +75,24 @@ begin
     SetLength(lBAr, l);
     while(i<l)do begin
       read(f, lBAr[i]);
-      if(IOResult <> 0) then begin LastRStat := IO_Failed; Exit; end;
+      if(IOResult <> 0) then begin
+	     ReadResult := IO_Failed;
+         Result     := ReadResult;
+		 Exit;
+	  end;
       inc(i);
     end;
 {$I+}
-    if (l=0)or BArCmp(@RBAr, @lBAr{, 7}) then begin
-      LastRStat := IO_NoData;
+    if (l=0) or BArCmp(@RBAr, @lBAr{, 7}) then begin
+      ReadResult := IO_NoData;
     end else begin
       RBAr := lBAr;
-      LastRStat := IO_OK;
+      ReadResult := IO_OK;
     end;
+    Result := ReadResult;
 end;
 {-----------------------------------------------------------------------------}
-procedure TIOStr.WriteSBuf;
+function TIOStr.WriteSBuf;
 var i, l: word;
 begin
   WBAr := WSBuf.Arrays[0];
@@ -99,15 +103,20 @@ begin
     i := 0;
     while(i<l)do begin
       write(f, WBAr[i]);
-      if(IOResult <> 0) then begin LastWStat := IO_Failed; Exit; end;
+      if(IOResult <> 0) then begin
+	     WriteResult := IO_Failed;
+         Result      := WriteResult;
+		 Exit;
+      end;
       inc(i);
     end;
 {$I+}
-    LastWStat := IO_OK;
+    WriteResult := IO_OK;
     WSBuf.IncR;
   end else begin
-    LastWStat := IO_NoData;
+    WriteResult := IO_NoData;
   end;
+  Result := WriteResult;
 end;
 {-----------------------------------------------------------------------------}
 function TIOStr.WriteByte;
@@ -137,19 +146,17 @@ begin
     {$I+}
 end;
 {-----------------------------------------------------------------------------}
-function TIOStr.GetFileName: ShortString; begin Result:=FN; end;
-{-----------------------------------------------------------------------------}
-function TIOStr.MkFile(FileName: ShortString): byte;
+function TIOStr.MkFile;
 begin
-  if FileName = '' then FileName := FN;
-  if FileName = '' then Result := IO_Failed
-  else if FileExists(FileName)then begin
+  if NameOfFile = '' then NameOfFile := FN;
+  if NameOfFile = '' then Result := IO_Failed
+  else if FileExists(NameOfFile)then begin
     Result := IO_Already or IO_OK;
-    FN := FileName;
+    FN := NameOfFile;
   end else try
-    AssignFile(f, FileName);
+    AssignFile(f, NameOfFile);
     Result := IO_OK;
-    FN     := FileName;
+    FN     := NameOfFile;
     try    ReWrite(f);
     except Result := IO_Failed;
     end;
@@ -159,6 +166,12 @@ begin
      FOpened := false;
    end;
   end;
+end;
+{-----------------------------------------------------------------------------}
+function TIOStr.Open(NameOfFile: ShortString): Boolean;
+begin
+  FileName := NameOfFile;
+  Result   := Opened;
 end;
 {-----------------------------------------------------------------------------}
 procedure TIOStr.SetOpened(const Value: Boolean);
@@ -174,5 +187,14 @@ begin
      FOpened := false;
    end;
 end;
-
+{-----------------------------------------------------------------------------}
+procedure TIOStr.SetFileName(const Value: ShortString);
+begin
+  if Value <> FN then begin
+	 Opened := false;
+     FN     := Value;
+  end;
+  if Value <> '' then Opened := true;
+end;
+{-----------------------------------------------------------------------------}
 end.

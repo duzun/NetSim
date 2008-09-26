@@ -180,7 +180,7 @@ end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.ABrowseExecute(Sender: TObject); var FN: String;
 begin
-  FN := IO.GetFileName;
+  FN := IO.FileName;
   if PromptForFileName(FN,
                        '(str)|*.str|(txt)|*.txt', '*.str',
                        'Chose a streaming file',
@@ -227,7 +227,7 @@ begin
                       else Panels[1].Text := 'Timer Off';
     Panels[2].Text := 'Addr: '+byte2str(IO.MyAddr);
     Panels[3].Text := IntToStr(IO.getCycleCount())+':'+IntToStr(IO.getBaudCount());
-    Panels[4].Text := ExtractFileName(IO.GetFileName);
+    Panels[4].Text := ExtractFileName(IO.FileName);
 
     with AddrList do begin
       setLength(tgt,0);

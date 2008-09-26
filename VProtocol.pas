@@ -100,7 +100,7 @@ var w: Word;
 begin
   if FileName = '' then FileName := FN;
   if Conected and (FileName = FN) then Result:=true
-  else if (MkFile(FileName) and IO_OK <> 0) then begin
+  else if Open(FileName) then begin
      BaudCounter  := 0;
      CycleCounter := 0;
      Reading      := true;
@@ -117,8 +117,8 @@ begin
   if Conected then begin
     if WSBuf.ready<>0 then Result:=false
     else begin
-      Opened    := false;
       Conected  := false;
+      Opened    := false;
       MyAddr    := 0;
       RWState   := 0;
       Result    := true;
@@ -130,8 +130,8 @@ end;
 function  TVProtocol.GetConected: boolean;  begin Result := Opened and FTimer.Enabled; end;
 procedure TVProtocol.SetConected(const Value: boolean);
 begin  
-   if (not Value)or(Value and(Opened or Conect()))then 
-      FTimer.Enabled := Value; 
+   if (not Value)or(Value and(Opened or Conect()))then
+      FTimer.Enabled := Value;
 end;
 {-----------------------------------------------------------------------------}
 procedure TVProtocol.SetID(const Value: ShortString);
