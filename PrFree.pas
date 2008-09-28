@@ -1,15 +1,8 @@
-unit uNET;
-{ Aici este encapsulat protocolul de comunicare cu moderator }
+unit PrHost;
+{ Aici este encapsulat protocolul de comunicare fara moderator }
 {-----------------------------------------------------------------------------
   Descriere: 
-  Inainte de a trimite informatii, fiecare participant cere "voie" 
-  de la moderator. 
-  Moderatorul la fel atribuie adrese calculatoarelor nou incluse in comunicare. 
-  Moderatorul totdeauna are adresa $01.
-  Cand moderatorul "pleaca", locul lui il ocupa ultimul calculator (cu adresa maxima).
-  Timpul este impartit in 2 cicluri, unul pentru moderator si altul pentru ceilalti.
-  Un ciclu este impartit in 2 perioade: de scriere si de citire. 
-  La perioada de citire participa toti, indiferent de ciclu. 
+  Concurenta libera...
  -----------------------------------------------------------------------------}
 interface
 {-----------------------------------------------------------------------------}
@@ -18,8 +11,7 @@ uses
   ExtCtrls, Classes;
 {-----------------------------------------------------------------------------}
 type
-  TuNET = class(TVProtocol)
-     LastAddr: byte;
+  TPrHost = class(TVProtocol)     
      RetryCounter: word;
   private
     StateOnRead: word;
@@ -37,26 +29,24 @@ type
 {-----------------------------------------------------------------------------}
 implementation
 {-----------------------------------------------------------------------------}
-{ TuNET }
+{ TPrHost }
 {-----------------------------------------------------------------------------}
-constructor TuNET.Create;
+constructor TPrHost.Create;
 begin
   inherited Create(AOwner, FileName);
-  LastAddr    := $0;
   OnTimer     := TimerProc;
 end;
 {-----------------------------------------------------------------------------}
-function TuNET.getState: word; begin Result := StateOnRead; end;
+function TPrHost.getState: word; begin Result := StateOnRead; end;
 {-----------------------------------------------------------------------------}
-procedure TuNET.OnConect();
+procedure TPrHost.OnConect();
 begin
   StateOnRead := 0; // begining 
   MyAddr := 0;  
   MaxAddr := 0;  
-  LastAddr := 0;  
 end;
 {-----------------------------------------------------------------------------}
-procedure TuNET.OnRead;
+procedure TPrHost.OnRead;
 begin
     case ReadResult of
      IO_Failed: State := 0; // Reinitializare la eroare
@@ -152,11 +142,11 @@ begin
   end;
 end;
 {-----------------------------------------------------------------------------}
-procedure TuNET.TimerProc;
+procedure TPrHost.TimerProc;
 begin
    { Reading }
    if(CycleCounter and 1 = 0)then begin 
-      p:=0;
+      p := 0;
       if ReadResult = IO_OK then begin
         ISOSplit(RBAr, p, len, src, tgt);
         if (src<>ToAll)and(src > MaxAddr) then MaxAddr := src;

@@ -6,7 +6,7 @@ uses Funcs;
 type
 {-----------------------------------------------------------------------------}
   TStrStack = class(TObject)
-    FinitCicle: Boolean; // True pentru a se opri cand s-a ajuns la untimul element din bufer
+    FinitCicle: Boolean; // True pentru a se opri cand s-a ajuns la unltimul element din bufer
     Success:    Boolean; // Spune daca ultima operatie a avut loc cu succes
   private
     FBuf: TBArArray;

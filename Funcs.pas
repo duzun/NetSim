@@ -22,18 +22,26 @@ function chr2num(c: char):word;
 function num2chr(nm: byte):char;
 function str2byte(byte_str: String): Word;
 function byte2str(bt: word; glow: String = ' '): String;
+function BAr2ByteStr(BAr: TBArray; len: word = 0): string;
 
-Function GenBAr(Mask: byte = 0; Index: word = 0;Len: word = $FF): TBArray;
-Procedure FillBAr(var BAr: TBArray; Mask: byte; Index: word = 0;Len: word = $FF);
+Function GenBAr(Mask: byte = 0; idx: word = 0;Len: word = $FF): TBArray;
+Procedure FillBAr(var BAr: TBArray; Mask: byte; idx: word = 0;Len: word = $FF);
 
-function Copy(var data:TBArray; Index: word = 0; Len: word = 0): TBArray; {Analogic cu Copy pentru String}
+function Copy(var data:TBArray; idx: word = 0; Len: word = 0): TBArray; {Analogic cu Copy pentru String}
+Function Insert(b: TBArray; var BAr: TBArray; idx: word = 0): word;             overload;
+Function Insert(b: byte; var BAr: TBArray; idx: word = 0; Len: word = 1): word; overload;
 function BArCmp(a1,a2: PBArray; len: word=0): boolean;           {Compara primele len elemmente din a1 si a2}
 function DecBAr(var BAr: TBArray; l: word = 1): word;            {Elimina l elemente de la coada BAr. return length}
 function IncBAr(var BAr: TBArray; l: word = 1; b: byte=0): word; {Adauga b de l ori la coada BAr. return length}
 function PopBAr(var BAr: TBArray; size: byte = 1): LongWord;     {Arunca ultimul element din BAr de lungimea size:(1..4)}
 function ShiftBAr(var BAr: TBArray; size: byte = 1): LongWord;   {Arunca primul  element din BAr de lungimea size:(1..4)}
-function Str2BAr(s: String):TBArray;
 function BAr2Str(s: TBArray):String;
+
+function ToBAr(s: byte; l: word=0):TBArray;     overload;
+function ToBAr(s: char; l: word=0):TBArray;     overload;
+function ToBAr(s: word; l: word=0):TBArray;     overload;
+function ToBAr(s: longword; l: word=0):TBArray; overload;
+function ToBAr(s: string; l: word=0):TBArray;   overload;
 
 function ISOLen(data: PBArray; var p: byte): boolean;
 function ISOCmd(data: PBArray; var src, tgt: byte): byte;
@@ -213,19 +221,6 @@ begin
   Result := true;                              // data len determined :-)
 end;
 {-----------------------------------------------------------------------------}
-function Str2BAr(s: String):TBArray;
-var w: LongWord;
-    r: TBArray;
-begin
-  w := length(s);
-  setLength(r, w);
-  while w<>0 do begin
-    r[w-1] := ord(s[w]);
-    dec(w);
-  end;
-  Result := r;
-end;
-{-----------------------------------------------------------------------------}
 function BAr2Str(s: TBArray):String;
 var w: LongWord;
     r: String;
@@ -238,6 +233,34 @@ begin
   end;
   Result := r;
 end;
+{---------------------------------------------------------------------------------------------------------}
+function ToBAr(s: byte; l:word=0):TBArray; overload; var r:TBArray; begin setLength(r,l+1); r[l]:=s; Result:=r; end;
+function ToBAr(s: char; l:word=0):TBArray; overload; var r:TBArray; begin setLength(r,l+1); r[l]:=ord(s); Result:=r; end;
+function ToBAr(s: word; l:word=0):TBArray; overload; var r:TBArray; begin setLength(r,l+2); r[l]:=s; r[l+1]:=s shr 8; Result:=r; end;
+{---------------------------------------------------------------------------------------------------------}
+function ToBAr(s: longword; l:word=0):TBArray; overload; 
+var r:TBArray; 
+begin 
+  setLength(r, l+4); 
+  r[l]:=s;        inc(l);
+  r[l]:=s shr 8;  inc(l);
+  r[l]:=s shr 16; inc(l); 
+  r[l]:=s shr 24; 
+  Result:=r; 
+end;
+{---------------------------------------------------------------------------------------------------------}
+function ToBAr(s: string; l:word=0):TBArray;   overload;
+var w: LongWord;
+    r: TBArray;
+begin
+  w := length(s);
+  setLength(r, w+l);
+  while w<>0 do begin
+    r[l+w-1] := ord(s[w]);
+    dec(w);
+  end;
+  Result := r;
+end;  
 {---------------------------------------------------------------------------------------------------------}
 { Converts a hexadecimal digit character into its' numerical value                                        }
 {---------------------------------------------------------------------------------------------------------}
@@ -274,6 +297,20 @@ begin
 end;
 {---------------------------------------------------------------------------------------------------------}
 function byte2str; begin Result := num2chr(Byte(bt) shr 4) + num2chr(Byte(bt)) + glow; end;
+{-----------------------------------------------------------------------------}
+function BAr2ByteStr;
+var r: string;
+    i: word;
+begin
+  r := '';
+  if len = 0 then len := length(BAr);
+  i := 0;
+  while i<len do begin
+    r := r + byte2str(BAr[i]);
+    inc(i);
+  end;     
+  Result := r;           
+end;
 {-----------------------------------------------------------------------------}
 function BArCmp;
 var m1, m2: word;
@@ -350,28 +387,61 @@ begin
   Result := r;
 end;
 {-----------------------------------------------------------------------------}
-function Copy(var data: TBArray; Index: word = 0; Len: word = 0): TBArray;
+function Copy(var data: TBArray; idx: word = 0; Len: word = 0): TBArray;
 var r: TBArray;
 begin
-   If (Len = 0)or(Len > length(data)) then Len := Length(data)-Index;
-   if Index + Len > length(data) then Len:=0;
+   If (Len = 0)or(Len > length(data)) then Len := Length(data)-idx;
+   if idx + Len > length(data) then Len:=0;
    SetLength(r, Len);
    while(Len>0)do begin
      dec(Len);
-     r[Len]:=data[Index+Len];
+     r[Len]:=data[idx+Len];
    end;
    Result := r;
 end;
 {-----------------------------------------------------------------------------}
-Procedure FillBAr;
+Function Insert(b: TBArray; var BAr: TBArray; idx: word = 0): word;           overload;
+var l, len: word;
 begin
-  if Length(BAr)<Index+Len then SetLength(BAr, Index+Len);
-  while(Len <> 0) do begin
-    BAr[Index] := Mask;
-    inc(Index);  dec(Len);
+  l:=Length(BAr);
+  if(idx>l)then Result := 0
+  else begin
+     Len := Length(b); 
+     inc(l, Len);
+     Result := l;
+     if(Len=0)then exit;
+     SetLength(BAr, l);
+     while(l>idx)do begin dec(l); BAr[l]:=BAr[l-Len]; end;
+     inc(idx, Len);
+     while(Len>0)do begin dec(Len); dec(idx); BAr[idx]:=b[Len]; end;
   end;
 end;
 {-----------------------------------------------------------------------------}
-Function GenBAr; var r: TBArray;  begin FillBAr(r, Mask, Index, Len); Result := r;end;
+Function Insert(b: byte; var BAr: TBArray; idx: word = 0; Len: word = 1): word; overload;
+var l: word;
+begin
+  l:=Length(BAr);
+  if(idx>l)then Result := 0
+  else begin
+     inc(l, Len);
+     Result := l;
+     if(Len=0)then exit;
+     SetLength(BAr, l);
+     while(l>idx)do begin dec(l); BAr[l]:=BAr[l-Len]; end;
+     inc(l, Len);
+     while(idx<l)do begin BAr[idx]:=b; inc(idx); end;
+  end;
+end;
+{-----------------------------------------------------------------------------}
+Procedure FillBAr;
+begin
+  if Length(BAr)<idx+Len then SetLength(BAr, idx+Len);
+  while(Len <> 0) do begin
+    BAr[idx] := Mask;
+    inc(idx);  dec(Len);
+  end;
+end;
+{-----------------------------------------------------------------------------}
+Function GenBAr; var r: TBArray;  begin FillBAr(r, Mask, idx, Len); Result := r;end;
 {-----------------------------------------------------------------------------}
 end.

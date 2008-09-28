@@ -29,12 +29,14 @@ type
   protected
     F:  BFile;                    // File Pointer
     FN: ShortString;              // Conection FileName
-    RBAr, WBAr, lBAr: TBArray;    // Byte Buffers
+    RBAr, WBAr, LastBAr: TBArray;          // Byte Buffers
     ReadResult, WriteResult: word;
+    CycleCounter: word;
+    ReadCycle: word;
   {=========================}
   public
-    property Opened: Boolean read FOpened write SetOpened;
-    Property FileName: ShortString read FN write SetFileName;
+    property Opened:   Boolean     read FOpened write SetOpened;
+    property FileName: ShortString read FN      write SetFileName;
     
     function Open(NameOfFile: ShortString): Boolean;
     function MkFile(NameOfFile: ShortString): word;
@@ -44,6 +46,7 @@ type
 
     function WriteByte(b: byte; poz: byte = 0): word;
     function ReadByte(var b: byte; poz: byte = 0): word;
+    
     constructor Create(NameOfFile: ShortString = '');
   {=========================}
   end;
@@ -61,6 +64,8 @@ begin
   RSBuf   := TStrStack.Create;
   FN      := NameOfFile;
   FOpened := false;
+  CycleCounter := 0;
+  ReadCycle    := 0;  
 end;
 {-----------------------------------------------------------------------------}
 function TIOStr.ReadSBuf;
@@ -68,25 +73,24 @@ var i: word;
     l: Integer;
 begin
 {$I-}
+    ReadResult := IO_Failed;
+    Result     := ReadResult;
     Seek(f, 0);
     l := FileSize(f);
     if l > c_MaxReadBuf then l := c_MaxReadBuf;
+    if (IOResult <> 0)or(l = -1) then exit;
     i := 0;
-    SetLength(lBAr, l);
+    SetLength(LastBAr, l);
     while(i<l)do begin
-      read(f, lBAr[i]);
-      if(IOResult <> 0) then begin
-	     ReadResult := IO_Failed;
-         Result     := ReadResult;
-		 Exit;
-	  end;
+      read(f, LastBAr[i]);
+      if(IOResult <> 0) then Exit;
       inc(i);
     end;
 {$I+}
-    if (l=0) or BArCmp(@RBAr, @lBAr{, 7}) then begin
+    if (l=0) or BArCmp(@RBAr, @LastBAr{, 7}) then begin
       ReadResult := IO_NoData;
     end else begin
-      RBAr := lBAr;
+      RBAr := LastBAr;
       ReadResult := IO_OK;
     end;
     Result := ReadResult;
@@ -94,15 +98,20 @@ end;
 {-----------------------------------------------------------------------------}
 function TIOStr.WriteSBuf;
 var i, l: word;
+    b: byte;
 begin
-  WBAr := WSBuf.Arrays[0];
-  if (WSBuf.Success) then begin
+  if(Length(WBAr)>0)then begin
+     LastBAr := WBAr; // Urgent packet
+     WSBuf.Success := true;
+  end else
+     LastBAr := WSBuf.Arrays[0];
+  if(WSBuf.Success) then begin
 {$I-}
     Seek(f, 0);
-    l := Length(WBAr);
+    l := Length(LastBAr);
     i := 0;
     while(i<l)do begin
-      write(f, WBAr[i]);
+      write(f, LastBAr[i]);
       if(IOResult <> 0) then begin
 	     WriteResult := IO_Failed;
          Result      := WriteResult;
@@ -110,9 +119,12 @@ begin
       end;
       inc(i);
     end;
+    b := CycleCounter;       write(f, b); // Numaratorul ciclului
+    b := CycleCounter shr 8; write(f, b);
 {$I+}
     WriteResult := IO_OK;
-    WSBuf.IncR;
+    if(Length(WBAr)>0)then  SetLength(WBAr,0)
+                      else  WSBuf.IncR;
   end else begin
     WriteResult := IO_NoData;
   end;
@@ -147,6 +159,7 @@ begin
 end;
 {-----------------------------------------------------------------------------}
 function TIOStr.MkFile;
+var dir: ShortString;
 begin
   if NameOfFile = '' then NameOfFile := FN;
   if NameOfFile = '' then Result := IO_Failed
@@ -154,6 +167,8 @@ begin
     Result := IO_Already or IO_OK;
     FN := NameOfFile;
   end else try
+    dir := ExtractFileDir(NameOfFile);
+    if(not DirectoryExists(dir)) then MkDir(dir);
     AssignFile(f, NameOfFile);
     Result := IO_OK;
     FN     := NameOfFile;
@@ -176,23 +191,28 @@ end;
 {-----------------------------------------------------------------------------}
 procedure TIOStr.SetOpened(const Value: Boolean);
 begin
+   {$I-}
    if Value and not FOpened and (MkFile(FN) and IO_OK <> 0)then
-     begin
+     try
        AssignFile(f, FN);
        Reset(f);
        FOpened := true;
+       ReadSBuf;
+       Opened := (IOResult = 0);
+     except Opened := false;
      end else
-   if not Value and FOpened then begin
-     CloseFile(f);
-     FOpened := false;
+   if not Value and FOpened then
+   try     CloseFile(f);
+   finally FOpened := false;
    end;
+   {$I+}
 end;
 {-----------------------------------------------------------------------------}
 procedure TIOStr.SetFileName(const Value: ShortString);
 begin
   if Value <> FN then begin
-	 Opened := false;
-     FN     := Value;
+    Opened := false;
+    FN     := Value;
   end;
   if Value <> '' then Opened := true;
 end;

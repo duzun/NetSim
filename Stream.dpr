@@ -7,7 +7,7 @@ uses
   BufferCl in 'BufferCl.pas',
   IOStreams in 'IOStreams.pas',
   StrStackCl in 'StrStackCl.pas',
-  uNET in 'uNET.pas',
+  PrHost in 'PrHost.pas',
   CmdByte in 'CmdByte.pas',
   VProtocol in 'VProtocol.pas';
 

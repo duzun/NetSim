@@ -1,8 +1,8 @@
 object Form1: TForm1
-  Left = 736
-  Top = 106
-  Width = 413
-  Height = 357
+  Left = 673
+  Top = 423
+  Width = 465
+  Height = 373
   Caption = 'Mini LAN Simulatore'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -16,40 +16,12 @@ object Form1: TForm1
   OnActivate = AWriteInfoExecute
   OnClose = FormClose
   OnCreate = FormCreate
-  DesignSize = (
-    405
-    303)
   PixelsPerInch = 96
   TextHeight = 13
-  object Memo1: TMemo
-    Left = 0
-    Top = 229
-    Width = 260
-    Height = 61
-    Hint = 'Aici scrie mesajul pe care doresti sa-l trimiti!'
-    Anchors = [akLeft, akRight, akBottom]
-    ScrollBars = ssVertical
-    TabOrder = 0
-    WantReturns = False
-    WantTabs = True
-    OnDblClick = AClearTextExecute
-  end
-  object Memo2: TMemo
-    Left = 0
-    Top = 0
-    Width = 260
-    Height = 234
-    Hint = 'Aici vin mesajele primite de la altii'
-    Anchors = [akLeft, akTop, akRight, akBottom]
-    ReadOnly = True
-    ScrollBars = ssBoth
-    TabOrder = 1
-    OnDblClick = AClearTextExecute
-  end
   object StatusBar1: TStatusBar
     Left = 0
-    Top = 284
-    Width = 405
+    Top = 300
+    Width = 457
     Height = 19
     Panels = <
       item
@@ -70,72 +42,181 @@ object Form1: TForm1
     OnDblClick = StatusBar1DblClick
     OnMouseMove = StatusBar1MouseMove
   end
-  object Panel1: TPanel
-    Left = 258
+  object PageControl1: TPageControl
+    Left = 0
     Top = 0
-    Width = 145
-    Height = 284
-    Anchors = [akTop, akRight, akBottom]
-    TabOrder = 3
-    DesignSize = (
-      145
-      284)
-    object Button4: TButton
-      Left = 6
-      Top = 249
-      Width = 75
-      Height = 25
-      Anchors = [akRight, akBottom]
-      Caption = 'Write'
-      Default = True
-      TabOrder = 0
-      OnClick = Button4Click
+    Width = 457
+    Height = 300
+    ActivePage = TabSheet2
+    Align = alClient
+    TabOrder = 1
+    object TabSheet1: TTabSheet
+      Caption = 'Chat'
+      DesignSize = (
+        449
+        272)
+      object Memo2: TMemo
+        Left = 0
+        Top = 0
+        Width = 300
+        Height = 192
+        Hint = 'Aici vin mesajele primite de la altii'
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        ReadOnly = True
+        ScrollBars = ssBoth
+        TabOrder = 0
+        OnDblClick = AClearTextExecute
+      end
+      object Memo1: TMemo
+        Left = 0
+        Top = 191
+        Width = 298
+        Height = 81
+        Hint = 'Aici scrie mesajul pe care doresti sa-l trimiti!'
+        Anchors = [akLeft, akRight, akBottom]
+        ScrollBars = ssVertical
+        TabOrder = 1
+        WantReturns = False
+        WantTabs = True
+        OnDblClick = AClearTextExecute
+      end
+      object Panel1: TPanel
+        Left = 304
+        Top = 0
+        Width = 145
+        Height = 272
+        Anchors = [akTop, akRight, akBottom]
+        TabOrder = 2
+        OnClick = Panel1Click
+        DesignSize = (
+          145
+          272)
+        object Label1: TLabel
+          Left = 88
+          Top = 224
+          Width = 3
+          Height = 13
+        end
+        object Label2: TLabel
+          Left = 88
+          Top = 248
+          Width = 3
+          Height = 13
+        end
+        object AddrList: TCheckListBox
+          Left = 0
+          Top = 23
+          Width = 145
+          Height = 169
+          Hint = 'Cui se refera comanda'
+          Anchors = [akLeft, akTop, akBottom]
+          Color = clScrollBar
+          ItemHeight = 13
+          Items.Strings = (
+            '')
+          TabOrder = 0
+        end
+        object Button4: TButton
+          Left = 6
+          Top = 233
+          Width = 75
+          Height = 25
+          Anchors = [akRight, akBottom]
+          Caption = 'Write'
+          Default = True
+          TabOrder = 1
+          OnClick = Button4Click
+        end
+        object Button1: TButton
+          Left = 6
+          Top = 201
+          Width = 75
+          Height = 25
+          Hint = 'Inchide adresa selectata'
+          Anchors = [akRight, akBottom]
+          Caption = 'Close'
+          TabOrder = 2
+          OnClick = Button1Click
+        end
+        object CheckBox1: TCheckBox
+          Left = 88
+          Top = 203
+          Width = 49
+          Height = 17
+          Anchors = [akRight, akBottom]
+          Caption = 'Log'
+          TabOrder = 3
+        end
+        object MyAddrEdit: TEdit
+          Left = 0
+          Top = 0
+          Width = 145
+          Height = 21
+          Hint = 'Numele meu'
+          TabOrder = 4
+          OnExit = MyAddrEditExit
+        end
+      end
     end
-    object Button1: TButton
-      Left = 8
-      Top = 218
-      Width = 75
-      Height = 25
-      Hint = 'Inchide adresa selectata'
-      Anchors = [akRight, akBottom]
-      Caption = 'Close'
-      TabOrder = 1
-      OnClick = Button1Click
+    object TabSheet2: TTabSheet
+      Caption = 'Info'
+      ImageIndex = 1
+      DesignSize = (
+        449
+        272)
+      object Memo3: TMemo
+        Left = 0
+        Top = 0
+        Width = 449
+        Height = 273
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Courier'
+        Font.Style = []
+        ParentFont = False
+        ScrollBars = ssVertical
+        TabOrder = 0
+        OnDblClick = AClearTextExecute
+      end
     end
-    object AddrList: TCheckListBox
-      Left = 0
-      Top = 23
-      Width = 145
-      Height = 186
-      Hint = 'Cui se refera comanda'
-      Anchors = [akLeft, akTop, akBottom]
-      Color = clScrollBar
-      ItemHeight = 13
-      Items.Strings = (
-        '')
-      TabOrder = 2
+  end
+  object MainMenu1: TMainMenu
+    Left = 416
+    Top = 65520
+    object Action1: TMenuItem
+      Caption = 'Action'
+      OnAdvancedDrawItem = Action1AdvancedDrawItem
+      object CloseAll1M: TMenuItem
+        Action = AClose
+        Caption = 'Close All'
+        ShortCut = 16499
+      end
+      object Connect1M: TMenuItem
+        Caption = 'Connect/Decon'
+        ShortCut = 8259
+        OnClick = AConDeconExecute
+      end
+      object Timer1M: TMenuItem
+        Caption = 'Timer'
+        ShortCut = 8276
+        OnClick = ATimmerOnOffExecute
+      end
+      object RunClone1: TMenuItem
+        Caption = 'Run Clone'
+        ShortCut = 16466
+        OnClick = ARunCloneExecute
+      end
     end
-    object MyAddrEdit: TEdit
-      Left = 0
-      Top = 1
-      Width = 145
-      Height = 21
-      Hint = 'Numele meu'
-      TabOrder = 3
-      OnExit = MyAddrEditExit
-    end
-    object CheckBox1: TCheckBox
-      Left = 88
-      Top = 216
-      Width = 97
-      Height = 17
-      Caption = 'Log'
-      TabOrder = 4
+    object Streamstr1: TMenuItem
+      Action = ABrowse
+      Caption = 'File'
     end
   end
   object ActionList1: TActionList
-    Left = 72
-    Top = 8
+    Left = 352
+    Top = 65520
     object AConect: TAction
       Caption = 'AConect'
       OnExecute = AConectExecute
@@ -177,44 +258,15 @@ object Form1: TForm1
       Caption = 'ARunClone'
       OnExecute = ARunCloneExecute
     end
+    object AOnStateChange: TAction
+      Caption = 'AOnStateChange'
+    end
   end
   object Timer1: TTimer
     Enabled = False
     Interval = 100
     OnTimer = Timer1Timer
-    Left = 40
-    Top = 8
-  end
-  object MainMenu1: TMainMenu
-    Left = 8
-    Top = 8
-    object Action1: TMenuItem
-      Caption = 'Action'
-      OnAdvancedDrawItem = Action1AdvancedDrawItem
-      object CloseAll1M: TMenuItem
-        Action = AClose
-        Caption = 'Close All'
-        ShortCut = 16499
-      end
-      object Connect1M: TMenuItem
-        Caption = 'Connect/Decon'
-        ShortCut = 8259
-        OnClick = AConDeconExecute
-      end
-      object Timer1M: TMenuItem
-        Caption = 'Timer'
-        ShortCut = 8276
-        OnClick = ATimmerOnOffExecute
-      end
-      object RunClone1: TMenuItem
-        Caption = 'Run Clone'
-        ShortCut = 16466
-        OnClick = ARunCloneExecute
-      end
-    end
-    object Streamstr1: TMenuItem
-      Action = ABrowse
-      Caption = 'File'
-    end
+    Left = 384
+    Top = 65520
   end
 end

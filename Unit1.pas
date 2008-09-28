@@ -3,45 +3,52 @@ unit Unit1;
 interface
 
 uses
-  VProtocol, uNET, Funcs, BufferCL, IOStreams, CmdByte,
+  VProtocol, PrHost, Funcs, BufferCL, IOStreams, CmdByte,
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ActnList, ExtCtrls, ShellAPI, ToolWin, ComCtrls,
   Buttons, Menus, CheckLst;
 
 const
-  Retries = 10;
+  Retries = 100;
 
 type
 
   TForm1 = class(TForm)
-    Memo1: TMemo;
-    ActionList1: TActionList;
-    Timer1: TTimer;
+    StatusBar1: TStatusBar;
+    PageControl1: TPageControl;
+    TabSheet1: TTabSheet;
+    TabSheet2: TTabSheet;
     Memo2: TMemo;
+    Memo1: TMemo;
+    Panel1: TPanel;
+    AddrList: TCheckListBox;
+    Button4: TButton;
+    Button1: TButton;
+    CheckBox1: TCheckBox;
+    MyAddrEdit: TEdit;
+    MainMenu1: TMainMenu;
+    Action1: TMenuItem;
+    CloseAll1M: TMenuItem;
+    Connect1M: TMenuItem;
+    Timer1M: TMenuItem;
+    RunClone1: TMenuItem;
+    Streamstr1: TMenuItem;
+    ActionList1: TActionList;
     AConect: TAction;
     ADisconect: TAction;
     ABrowse: TAction;
     AClearText: TAction;
-    StatusBar1: TStatusBar;
-    MainMenu1: TMainMenu;
-    Action1: TMenuItem;
-    Connect1M: TMenuItem;
-    Panel1: TPanel;
-    Button4: TButton;
-    Streamstr1: TMenuItem;
     AConDecon: TAction;
     ATimmerOnOff: TAction;
-    Timer1M: TMenuItem;
     AWriteInfo: TAction;
-    Button1: TButton;
-    AddrList: TCheckListBox;
-    MyAddrEdit: TEdit;
     AClose: TAction;
-    CloseAll1M: TMenuItem;
     ACloseAll: TAction;
     ARunClone: TAction;
-    RunClone1: TMenuItem;
-    CheckBox1: TCheckBox;
+    Timer1: TTimer;
+    Label1: TLabel;
+    Label2: TLabel;
+    Memo3: TMemo;
+    procedure OnStateChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
 
@@ -65,6 +72,7 @@ type
       Y: Integer);
     procedure StatusBar1DblClick(Sender: TObject);
     procedure ARunCloneExecute(Sender: TObject);
+    procedure Panel1Click(Sender: TObject);
   private
     { Private declarations }
     ToClose:boolean;
@@ -104,8 +112,9 @@ end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-    IO := TuNET.Create(Self, 'Stream.str');
-    IO.IDs[0]  := Str2BAr('<To All>');
+    IO := TPrHost.Create(Self, 'Chanels\Stream.str');
+    IO.IDs[0]  := ToBAr('<To All>');
+    IO.OnStateChange := OnStateChange;
     setLength(tgt, 0);
     ToClose    := false;
     Condition  := false;
@@ -119,7 +128,7 @@ procedure TForm1.Button4Click(Sender: TObject);
 var ba: TBArray;
     i: word;
 begin
-  ba :=  Str2BAr(#2+Memo1.Text);
+  ba :=  ToBAr(#2+Memo1.Text);
   if Length(tgt)=0 then IO.Send(cmd_write, ba)
                    else IO.ListSend(cmd_write, ba, tgt);
   Memo1.Clear;                 
@@ -130,6 +139,13 @@ var i:  word;
     bf: TBArray;
     cmd, src: byte;
 begin
+  Label1.Caption := IntToStr((IO as TPrHost).getState);
+  if IO.Writing then
+     Label2.Caption := 'Writing'
+  else if IO.Reading then
+     Label2.Caption := 'Reading'
+  else
+     Label2.Caption := '...';
 
   if IO.RSBuf.ready <> 0 then with IO.RSBuf do begin
    repeat
@@ -153,10 +169,15 @@ begin
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.AConectExecute(Sender: TObject);
-begin  Cnter := Retries;  while not IO.Conect and (Cnter<>0) do dec(Cnter); PutText(Sender, 'Conected');end;
+begin
+   if not IO.Conect then
+      ShowMessage('Nu ma pot conecta la ' + IO.FileName + '!')
+   else
+      PutText(Sender, 'Conected');
+end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.ADisconectExecute(Sender: TObject);
-begin  Cnter := Retries;  while not IO.Disconect and (Cnter<>0) do dec(Cnter); PutText(Sender, 'Disconected');end;
+begin  Cnter := Retries;  while not IO.Disconect(Cnter<>0) do dec(Cnter); PutText(Sender, 'Disconected');end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.AConDeconExecute(Sender: TObject);
 begin
@@ -323,6 +344,19 @@ end;
 procedure TForm1.ARunCloneExecute(Sender: TObject);
 begin
   ShellExecute(0, 0, PChar(ParamStr(0)), 0, 0, 0);
+end;
+
+procedure TForm1.Panel1Click(Sender: TObject);
+var b: TBArray;
+begin
+  b := GenBAr(65,0,12);
+  Insert(GenBAr(69,0,12),b, 13);
+  Memo1.Text := BAr2Str(b);
+end;
+
+procedure TForm1.OnStateChange(Sender: TObject);
+begin
+  with Sender as TVProtocol do Memo3.Lines.Append(StateMsg);
 end;
 
 end.
