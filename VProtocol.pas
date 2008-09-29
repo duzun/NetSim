@@ -3,11 +3,11 @@ unit VProtocol;
 interface
 {-----------------------------------------------------------------------------}
 uses
-  Funcs, IOStreams, CmdByte,
+  Funcs, IOStreams, Pack, CmdByte,
   ExtCtrls, Classes;
 {-----------------------------------------------------------------------------}
 const
-  c_BaudRate    = 300; // frames/sec : Max = 500
+  c_BaudRate    = 500; // frames/sec : Max = 500
   c_Reading     = $1;
   c_Writing     = $2;
 {-----------------------------------------------------------------------------}
@@ -42,10 +42,15 @@ type
     FTimer:    TTimer;
     FOwner:    TComponent;
 
-//     p, len, tgt, src:  byte;
-//     CycleCounter: word;
     BaudCounter:  word;
 
+    {Discompunerea Frame-ului primit}
+    Pack :TPack; 
+    p, len, tgt, src:  byte;
+    Cycle: integer;
+    Data: TBArray;
+    function SplitRBAr: boolean;
+    
   public
     property OnTimer    : TNotifyEvent read FOnTimer    write SetOnTimer;
     property ID         : ShortString  read FID         write SetID;
@@ -110,11 +115,12 @@ begin
   RWState         := 0;
   OnTimer         := nil;
   BaudRate        := c_BaudRate;
-  
+
+//   Pack := TPack.Create(0);
   FTimer          := TTimer.Create(FOwner);
   FTimer.Enabled  := false;
   FTimer.Interval := 1;
-//   FTimer.OnTimer  := TimerProc;
+
   setlength(FIDs, 0);
   Conected        := false;
 end;
@@ -141,7 +147,6 @@ begin
   case ReadResult of
   IO_OK:
      begin
-//         inc(CycleCounter);
         BaudCounter := FBaudRate;
         Reading     := true; // Enable Reading
         FTimer.OnTimer := TimerProc;
@@ -254,10 +259,11 @@ begin
    if(BaudCounter = 0)then begin
      if(Reading) then ReadSBuf  else    // --- Data reading  ---
      if(Writing) then WriteSBuf else    // --- Data writing  ---
-                                ; 
+     inc(OffSetCycle);                  // Cycles from connection
      BaudCounter := FBaudRate;  // renew counter
+//      SplitRBAr;  // ReadResult - ?
      OnTimer(Self);            // --- Data parsing ---
-     inc(CycleCounter);        // Cycles from connection
+
    end else begin
      dec(BaudCounter);
    end;
@@ -350,4 +356,13 @@ begin
   Result:=r;
 end;
 {-----------------------------------------------------------------------------}
+function TVProtocol.SplitRBAr;
+var r: boolean;
+begin
+   r := ISOSplit(RBAr, p, len, src, tgt)=0;
+   if not r then exit;
+   Data  := Copy(RBAr, p, len);
+   Cycle := BAr2Int(RBAr, p+len+1, 4);
+end;
+
 end.

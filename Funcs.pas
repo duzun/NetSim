@@ -23,8 +23,9 @@ function num2chr(nm: byte):char;
 function str2byte(byte_str: String): Word;
 function byte2str(bt: word; glow: String = ' '): String;
 function BAr2ByteStr(BAr: TBArray; len: word = 0): string;
+function BAr2Int(BAr: TBArray; p: integer=0; len: word=4): integer;
 
-Function GenBAr(Mask: byte = 0; idx: word = 0;Len: word = $FF): TBArray;
+Function  GenBAr(Mask: byte = 0; idx: word = 0;Len: word = $FF): TBArray;
 Procedure FillBAr(var BAr: TBArray; Mask: byte; idx: word = 0;Len: word = $FF);
 
 function Copy(var data:TBArray; idx: word = 0; Len: word = 0): TBArray; {Analogic cu Copy pentru String}
@@ -37,11 +38,12 @@ function PopBAr(var BAr: TBArray; size: byte = 1): LongWord;     {Arunca ultimul
 function ShiftBAr(var BAr: TBArray; size: byte = 1): LongWord;   {Arunca primul  element din BAr de lungimea size:(1..4)}
 function BAr2Str(s: TBArray):String;
 
-function ToBAr(s: byte; l: word=0):TBArray;     overload;
-function ToBAr(s: char; l: word=0):TBArray;     overload;
-function ToBAr(s: word; l: word=0):TBArray;     overload;
-function ToBAr(s: longword; l: word=0):TBArray; overload;
-function ToBAr(s: string; l: word=0):TBArray;   overload;
+function ToBAr(s: byte; p: word=0):TBArray;     overload;
+function ToBAr(s: char; p: word=0):TBArray;     overload;
+function ToBAr(s: word; p: word=0):TBArray;     overload;
+function ToBAr(s: integer; p: word=0; l:word=4):TBArray; overload;
+function ToBAr(s: longword; p: word=0; l:word=4):TBArray; overload;
+function ToBAr(s: string; p: word=0):TBArray;   overload;
 
 function ISOLen(data: PBArray; var p: byte): boolean;
 function ISOCmd(data: PBArray; var src, tgt: byte): byte;
@@ -55,6 +57,9 @@ function ISOSplit(var frame: TBArray;var data: TBArray; var p,len,src,tgt: byte)
 
 function ArISOForm(var data: TBArray; src:byte=0; tgt:byte=0): TBArArray;
 function ArISOSplit(var frame: TBArArray;var src, tgt: byte): TBArray;
+
+function WriteBAr(var f: BFile;BAr: TBArray; len: word=0): word;
+function ReadBAr(var f: BFile; var BAr: TBArray; len: word=0): word;
 {-----------------------------------------------------------------------------}
 implementation
 {-----------------------------------------------------------------------------}
@@ -234,29 +239,31 @@ begin
   Result := r;
 end;
 {---------------------------------------------------------------------------------------------------------}
-function ToBAr(s: byte; l:word=0):TBArray; overload; var r:TBArray; begin setLength(r,l+1); r[l]:=s; Result:=r; end;
-function ToBAr(s: char; l:word=0):TBArray; overload; var r:TBArray; begin setLength(r,l+1); r[l]:=ord(s); Result:=r; end;
-function ToBAr(s: word; l:word=0):TBArray; overload; var r:TBArray; begin setLength(r,l+2); r[l]:=s; r[l+1]:=s shr 8; Result:=r; end;
+function ToBAr(s: byte; p:word=0):TBArray; overload; var r:TBArray; begin setLength(r,p+1); r[p]:=s; Result:=r; end;
+function ToBAr(s: char; p:word=0):TBArray; overload; var r:TBArray; begin setLength(r,p+1); r[p]:=ord(s); Result:=r; end;
+function ToBAr(s: word; p:word=0):TBArray; overload; var r:TBArray; begin setLength(r,p+2); r[p]:=s; r[p+1]:=s shr 8; Result:=r; end;
+function ToBAr(s: longword; p:word=0;l:word=4):TBArray; overload; begin Result := ToBAr(integer(s), p, l); end;
 {---------------------------------------------------------------------------------------------------------}
-function ToBAr(s: longword; l:word=0):TBArray; overload; 
+function ToBAr(s: integer; p:word=0; l:word=4):TBArray; overload;
 var r:TBArray; 
-begin 
-  setLength(r, l+4); 
-  r[l]:=s;        inc(l);
-  r[l]:=s shr 8;  inc(l);
-  r[l]:=s shr 16; inc(l); 
-  r[l]:=s shr 24; 
+begin
+  setLength(r, p+l);
+  while(l>0)do begin
+     r[p]:=byte(s); inc(p);
+     s := s shr 8;
+     dec(l);
+  end; 
   Result:=r; 
-end;
+end; 
 {---------------------------------------------------------------------------------------------------------}
-function ToBAr(s: string; l:word=0):TBArray;   overload;
+function ToBAr(s: string; p:word=0):TBArray;   overload;
 var w: LongWord;
     r: TBArray;
 begin
   w := length(s);
-  setLength(r, w+l);
+  setLength(r, w+p);
   while w<>0 do begin
-    r[l+w-1] := ord(s[w]);
+    r[p+w-1] := ord(s[w]);
     dec(w);
   end;
   Result := r;
@@ -310,6 +317,22 @@ begin
     inc(i);
   end;     
   Result := r;           
+end;
+{-----------------------------------------------------------------------------}
+function BAr2Int(BAr: TBArray; p: integer=0; len: word = 4): integer;
+var r, l: integer;
+begin
+  l := Length(BAr);
+  r := 0;
+  if (p<l) then begin
+    if p + len > l then len := l - p;
+    while len > 0 do begin
+       dec(len);
+       r := r shl 8;
+       inc(r, BAr[p+len]);
+    end;
+  end;
+  Result := r;   
 end;
 {-----------------------------------------------------------------------------}
 function BArCmp;
@@ -443,5 +466,48 @@ begin
 end;
 {-----------------------------------------------------------------------------}
 Function GenBAr; var r: TBArray;  begin FillBAr(r, Mask, idx, Len); Result := r;end;
+{-----------------------------------------------------------------------------}
+function WriteBAr(var f: BFile;BAr: TBArray; len: word=0): word;
+var i: integer;
+begin
+{$I-}
+  if len = 0 then len := Length(BAr);
+  i := 0;
+  while(i<len)do begin
+    write(f, BAr[i]);
+    if(IOResult <> 0) then begin
+       Result := i;
+       Exit;
+    end;
+    inc(i);
+  end;
+  Result := i;
+{$I+}
+end;
+{-----------------------------------------------------------------------------}
+function ReadBAr(var f: BFile; var BAr: TBArray; len: word=0): word;
+var i, l: integer;
+begin
+{$I-}
+    i := FilePos(f);
+    l := FileSize(f);
+    if (IOResult <> 0)or(l = -1) then begin
+       Result := 0;
+       Exit; 
+    end;
+    if (len = 0)or(i+len > l) then len := l - i
+    else if (i+len < l) then l := i+len;
+    SetLength(BAr, len);
+    while(i<l)do begin
+      Read(f, BAr[i]);
+      if(IOResult <> 0) then begin
+        Result := len - (l - i);
+        Exit; 
+      end;
+      inc(i);
+    end;
+    Result := len;
+{$I+}
+end;
 {-----------------------------------------------------------------------------}
 end.

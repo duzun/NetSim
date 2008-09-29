@@ -47,7 +47,7 @@ object Form1: TForm1
     Top = 0
     Width = 457
     Height = 300
-    ActivePage = TabSheet2
+    ActivePage = TabSheet3
     Align = alClient
     TabOrder = 1
     object TabSheet1: TTabSheet
@@ -160,6 +160,10 @@ object Form1: TForm1
     end
     object TabSheet2: TTabSheet
       Caption = 'Info'
+      ImageIndex = 2
+    end
+    object TabSheet3: TTabSheet
+      Caption = 'Log'
       ImageIndex = 1
       DesignSize = (
         449

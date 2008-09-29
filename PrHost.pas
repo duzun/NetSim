@@ -23,7 +23,6 @@ type
      RetryCounter: word;
   private
     StateOnRead: word;
-    p, len, tgt, src:  byte;
 
   public
     constructor Create(AOwner: TComponent; FileName: ShortString = '');
@@ -61,11 +60,15 @@ begin
     case ReadResult of
      IO_Failed: State := 0; // Reinitializare la eroare
      IO_NoData: ;
-     IO_OK:     ;
+     IO_OK:
+        if src = MyAddr then     
+           SendLog('> '+byte2str(tgt)+'| '+BAr2ByteStr(RBAr, len+3))
+        else    
+           SendLog('< '+byte2str(src)+'| '+BAr2ByteStr(RBAr, len+3));
     end;
   case State of
   0:begin  // Initializare
-    SendLog('OnRead: State('+inttostr(State)+')');
+    SendLog('OnRead: State='+inttostr(State));
     RetryCounter := 4; // Nr de incercari
     if MyAddr <> 0 then State := 2 else State := 3;
 {    case ReadResult of
@@ -76,7 +79,7 @@ begin
 }  end;
   1:begin  // Conectare
     dec(RetryCounter);
-    SendLog('OnRead: State('+inttostr(State)+'): '+inttostr(RetryCounter));
+    SendLog('OnRead: State='+inttostr(State)+', '+inttostr(RetryCounter));
     case ReadResult of
      IO_OK:     State := 3;
      IO_NoData: if(RetryCounter=0)then State:=2 else exit;
@@ -92,19 +95,19 @@ begin
   end;
   3:begin  // Asteapta adresa
     if(ReadResult=IO_OK)then begin
-      SendLog('OnRead: St:'+inttostr(State)+', src:'+byte2str(src)+', tgt:'+byte2str(tgt)+', cmd:'+byte2str(RBAr[p]));
-      if(src=$01)and(tgt=$00)and(len>0)then
+//       SendLog('OnRead: St:'+inttostr(State));
+      if(tgt=$00)and(len>0)then
         {/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/}
-        case RBAr[p] of
-        cmd_tellMe: 
-             begin
-               SendCmd(cmd_giveAddr, ToAll);
+        case Data[0] of
+        cmd_tellMe:
+             if (src=$01) then begin
+               SendCmdNow(cmd_giveAddr, ToAll);
                Writing := true;
              end;
-        cmd_OK or cmd_giveAddr: 
-             begin 
-               MyAddr := RBAr[p+1]; 
+        cmd_OK or cmd_giveAddr:
+             begin
                State  := 4;
+               MyAddr := Data[1];
              end;
         end
         {/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/}
@@ -112,12 +115,12 @@ begin
   end;
   4:begin    // Spune tuturor ca sunt prezent
     if(ReadResult=IO_OK)then begin
-      SendLog('OnRead: St='+inttostr(State)+', cmd='+byte2str(RBAr[p]));
+//       SendLog('OnRead: St='+inttostr(State)+', cmd='+byte2str(RBAr[p]));
       if(src<>MyAddr)and((tgt=$00)or(tgt=MyAddr))and(len>0)then
         {/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/}
-        case RBAr[p] of
+        case Data[0] of
         cmd_tellMe:
-            begin
+            if(src=$01) then begin
               SendCmd(cmd_start, ToAll);
               Writing := true;
               State   := 5;
@@ -131,13 +134,12 @@ begin
   5:begin  // Citire date
     if(ReadResult=IO_OK)then begin
       if(src>MaxAddr) then MaxAddr := src;
-      SendLog('OnRead: '+BAr2ByteStr(RBAr, len+1));
       if((src<>MyAddr)and(tgt=MyAddr)or(tgt=ToAll))and(len>0)then
       {/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/}
-      case RBAr[p] of   // parsing commands
+      case Data[0] of   // parsing commands
 
       cmd_isPresent: 
-         SendCmdNow(RBAr[p] or cmd_OK, src);
+         SendCmdNow(Data[0] or cmd_OK, src);
          
       cmd_start: 
          begin
@@ -162,9 +164,8 @@ begin
          
       cmd_write:   
          begin
-            LastBAr := Copy(RBAr,p,len);
-            setLength(LastBAr, len+1);
-            LastBAr[len]:=src;
+            LastBAr := Data;
+            IncBAr(LastBAr, 1, src);
             RSBuf.Each := LastBAr;
          end;
          
@@ -175,10 +176,10 @@ begin
          end;
          
       cmd_OK or cmd_giveAddr:
-         MyAddr := RBAr[p+1];
+         MyAddr := Data[1];
          
       cmd_OK or cmd_readID: 
-         IDs[src] := Copy(RBAr,p+1,len-1);
+         IDs[src] := Copy(Data,1,len-1);
          
       else
       end;
@@ -198,7 +199,7 @@ begin
    if(CycleCounter and 1 = 0)then begin 
       p:=0;
       if ReadResult = IO_OK then begin
-        ISOSplit(RBAr, p, len, src, tgt);
+        SplitRBAr;
         if (src<>ToAll)and(src > MaxAddr) then MaxAddr := src;
         if (tgt<>ToAll)and(tgt > MaxAddr) then MaxAddr := tgt;
       end else begin
@@ -208,18 +209,28 @@ begin
       OnRead(StateOnRead); // --- Data parsing ---
 
      { $01 is DJ, Boss }
-     if(MyAddr=$01)and(CycleCounter and 2 = 0)then begin
-        inc(LastAddr);     // Who can write?
-        if LastAddr > MaxAddr then LastAddr:=0;
-        if LastAddr <> MyAddr then begin
-          SetLength(LastBAr,3);
-          LastBAr[0]:=cmd_tellMe;
-          LastBAr[1]:=$FF and CycleCounter;
-          LastBAr[2]:=$FF and (CycleCounter shr 8);
-          SendData(LastBAr, LastAddr);
-        end;
-        Writing := true; // write in the next Cycle
-     end;
+     if(MyAddr=$01) then begin
+       if(CycleCounter and 2 = 0)then begin
+          inc(LastAddr);     // Who can write?
+          if LastAddr > MaxAddr then LastAddr:=0;
+          if LastAddr <> MyAddr then begin
+//             SetLength(LastBAr,3);
+//             LastBAr[0]:=cmd_tellMe;
+//             LastBAr[1]:=$FF and CycleCounter;
+//             LastBAr[2]:=$FF and (CycleCounter shr 8);
+            SendCmd(cmd_tellMe, LastAddr);
+          end;
+          Writing := true; // write in the next Cycle
+       end
+     end else begin
+{       if (src=$01) then begin
+         if(tgt=$00)and(LastAddr<MyAddr)and(StateOnRead=5) then begin
+            StateOnRead := 3;
+            MyAddr := 0;
+         end else LastAddr := tgt;
+       end;
+}     end;
+     
    end else begin
   { Writing }
      if(Writing)then begin // --- Have right to write  ---

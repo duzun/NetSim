@@ -25,19 +25,22 @@ type
     FOpened:  Boolean;
     procedure SetOpened(const Value: Boolean);
     procedure SetFileName(const Value: ShortString);
+    procedure SetCycleCounter(const Value: integer);
+    function  GetCycleCounter: integer;
   {=========================}
   protected
     F:  BFile;                    // File Pointer
     FN: ShortString;              // Conection FileName
     RBAr, WBAr, LastBAr: TBArray;          // Byte Buffers
-    ReadResult, WriteResult: word;
-    CycleCounter: word;
-    ReadCycle: word;
+    ReadResult, WriteResult: byte;
+    ReadCycle, WriteCycle: word;
+    OffSetCycle: integer;
   {=========================}
   public
     property Opened:   Boolean     read FOpened write SetOpened;
     property FileName: ShortString read FN      write SetFileName;
-    
+    property CycleCounter: integer read GetCycleCounter write SetCycleCounter;
+
     function Open(NameOfFile: ShortString): Boolean;
     function MkFile(NameOfFile: ShortString): word;
 
@@ -48,6 +51,7 @@ type
     function ReadByte(var b: byte; poz: byte = 0): word;
     
     constructor Create(NameOfFile: ShortString = '');
+    destructor  Destroy; override;
   {=========================}
   end;
 {-----------------------------------------------------------------------------}
@@ -60,45 +64,42 @@ uses
 constructor TIOStr.Create;
 begin
   inherited Create;
-  WSBuf   := TStrStack.Create;
-  RSBuf   := TStrStack.Create;
-  FN      := NameOfFile;
-  FOpened := false;
-  CycleCounter := 0;
-  ReadCycle    := 0;  
+  WSBuf       := TStrStack.Create;
+  RSBuf       := TStrStack.Create;
+  FN          := NameOfFile;
+  FOpened     := false;
+  OffSetCycle := 0;
+  WriteCycle  := 0;
+  ReadCycle   := 0;  
 end;
 {-----------------------------------------------------------------------------}
+//
+{-----------------------------------------------------------------------------}
 function TIOStr.ReadSBuf;
-var i: word;
-    l: Integer;
+var l: integer;
 begin
 {$I-}
-    ReadResult := IO_Failed;
-    Result     := ReadResult;
     Seek(f, 0);
     l := FileSize(f);
     if l > c_MaxReadBuf then l := c_MaxReadBuf;
-    if (IOResult <> 0)or(l = -1) then exit;
-    i := 0;
-    SetLength(LastBAr, l);
-    while(i<l)do begin
-      read(f, LastBAr[i]);
-      if(IOResult <> 0) then Exit;
-      inc(i);
+    if (IOResult <> 0)or(l = -1)or(ReadBAr(f, LastBAr, l) < l) then begin
+       ReadResult := IO_Failed;
+       Exit; 
     end;
 {$I+}
     if (l=0) or BArCmp(@RBAr, @LastBAr{, 7}) then begin
       ReadResult := IO_NoData;
+      inc(OffSetCycle);
     end else begin
       RBAr := LastBAr;
       ReadResult := IO_OK;
+      inc(ReadCycle); 
     end;
     Result := ReadResult;
 end;
 {-----------------------------------------------------------------------------}
 function TIOStr.WriteSBuf;
-var i, l: word;
-    b: byte;
+var l: word;
 begin
   if(Length(WBAr)>0)then begin
      LastBAr := WBAr; // Urgent packet
@@ -109,24 +110,20 @@ begin
 {$I-}
     Seek(f, 0);
     l := Length(LastBAr);
-    i := 0;
-    while(i<l)do begin
-      write(f, LastBAr[i]);
-      if(IOResult <> 0) then begin
-	     WriteResult := IO_Failed;
-         Result      := WriteResult;
-		 Exit;
-      end;
-      inc(i);
+    if(IOResult <> 0) or (l>WriteBAr(f, LastBAr, l)) then begin
+	   WriteResult := IO_Failed;
+       Result      := WriteResult;
+       Exit;
     end;
-    b := CycleCounter;       write(f, b); // Numaratorul ciclului
-    b := CycleCounter shr 8; write(f, b);
+    WriteBAr(f, ToBAr(CycleCounter)); // Numaratorul ciclului
 {$I+}
     WriteResult := IO_OK;
     if(Length(WBAr)>0)then  SetLength(WBAr,0)
                       else  WSBuf.IncR;
+    inc(WriteCycle); 
   end else begin
     WriteResult := IO_NoData;
+    inc(OffSetCycle);
   end;
   Result := WriteResult;
 end;
@@ -217,4 +214,8 @@ begin
   if Value <> '' then Opened := true;
 end;
 {-----------------------------------------------------------------------------}
+destructor TIOStr.Destroy; begin Opened := false; inherited Destroy; end;
+{-----------------------------------------------------------------------------}
+procedure TIOStr.SetCycleCounter;begin OffSetCycle := Value - (ReadCycle + WriteCycle); end;
+function TIOStr.GetCycleCounter; begin Result := ReadCycle + WriteCycle + OffSetCycle; end;
 end.

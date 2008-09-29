@@ -17,7 +17,7 @@ type
     StatusBar1: TStatusBar;
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
-    TabSheet2: TTabSheet;
+    TabSheet3: TTabSheet;
     Memo2: TMemo;
     Memo1: TMemo;
     Panel1: TPanel;
@@ -48,6 +48,7 @@ type
     Label1: TLabel;
     Label2: TLabel;
     Memo3: TMemo;
+    TabSheet2: TTabSheet;
     procedure OnStateChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -349,14 +350,12 @@ end;
 procedure TForm1.Panel1Click(Sender: TObject);
 var b: TBArray;
 begin
-  b := GenBAr(65,0,12);
-  Insert(GenBAr(69,0,12),b, 13);
-  Memo1.Text := BAr2Str(b);
+  Memo1.Text := IntToStr(BAr2Int(ToBAr(integer(123456), 0, 4), 0, 4));
 end;
 
 procedure TForm1.OnStateChange(Sender: TObject);
 begin
-  with Sender as TVProtocol do Memo3.Lines.Append(StateMsg);
+  if Timer1.Enabled then with Sender as TVProtocol do Memo3.Lines.Append(StateMsg);
 end;
 
 end.
