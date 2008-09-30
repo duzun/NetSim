@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 696
-  Top = 330
+  Left = 694
+  Top = 434
   Width = 465
   Height = 373
   Caption = 'Mini LAN Simulatore'
@@ -20,7 +20,7 @@ object Form1: TForm1
   TextHeight = 13
   object StatusBar1: TStatusBar
     Left = 0
-    Top = 302
+    Top = 300
     Width = 457
     Height = 19
     Panels = <
@@ -46,7 +46,7 @@ object Form1: TForm1
     Left = 0
     Top = 0
     Width = 457
-    Height = 302
+    Height = 300
     ActivePage = TabSheet1
     Align = alClient
     TabOrder = 1
@@ -54,7 +54,7 @@ object Form1: TForm1
       Caption = 'Chat'
       DesignSize = (
         449
-        274)
+        272)
       object Memo2: TMemo
         Left = 0
         Top = 0
@@ -108,6 +108,7 @@ object Form1: TForm1
           Items.Strings = (
             '')
           TabOrder = 0
+          OnClick = AddrListClick
         end
         object Button4: TButton
           Left = 6
@@ -118,7 +119,7 @@ object Form1: TForm1
           Caption = 'Write'
           Default = True
           TabOrder = 1
-          OnClick = Button4Click
+          OnClick = SendWriteCmd
         end
         object Button1: TButton
           Left = 6
@@ -129,7 +130,7 @@ object Form1: TForm1
           Anchors = [akRight, akBottom]
           Caption = 'Close'
           TabOrder = 2
-          OnClick = Button1Click
+          OnClick = SendCloseCmd
         end
         object MyAddrEdit: TEdit
           Left = 0
@@ -147,7 +148,7 @@ object Form1: TForm1
           Height = 25
           Caption = 'Test'
           TabOrder = 4
-          OnClick = Button2Click
+          OnClick = SendTestCmd
         end
         object Button3: TButton
           Left = 70
@@ -157,7 +158,7 @@ object Form1: TForm1
           Anchors = [akRight, akBottom]
           Caption = 'Clear'
           TabOrder = 5
-          OnClick = Button3Click
+          OnClick = SendClearCmd
         end
       end
     end
@@ -184,7 +185,7 @@ object Form1: TForm1
       ImageIndex = 1
       DesignSize = (
         449
-        274)
+        272)
       object Memo3: TMemo
         Left = 0
         Top = 0

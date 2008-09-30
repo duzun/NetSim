@@ -9,13 +9,13 @@ goto end
 rem --------------------------------------------------------------------------
 :defaults
 rem Defaults   
-if "%bak_ext%."    =="." set bak_ext=pas, c, h, cpp, php, inc, js, bat, cmd, ini, inf, csv, xls, doc, htm, html, exe, dpr, dfm
+if "%bak_ext%."    =="." set bak_ext=pas, c, h, cpp, php, inc, js, bat, cmd, ini, inf, csv, xls, doc, htm, html, exe, dpr, dfm, ppr, cfg, txt, ppt, pptx
 if "%bak_dir%."    =="." set bak_dir=%date%
 if "%bak_subdirs%."=="." set bak_subdirs=
-if "%bak_lng%."    =="." set bak_lng=
+if "%bak_lng%."    =="." set bak_lng=Streaming
 if "%bak_dsk%."    =="." set bak_dsk=c, d, e, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
 if "%bak_dbl_dir%."=="." set bak_dbl_dir=
-if "%bak_dbl%."    =="." set bak_dbl=DUzunSys\DLib
+if "%bak_dbl%."    =="." set bak_dbl=DUzunSys
 goto e
 rem --------------------------------------------------------------------------
 :menu
@@ -28,12 +28,6 @@ rem --------------------------------------------------------------------------
     Echo P: Pack (Rar)
     Echo A: ALL (BackUp and Double)
     Echo.
-    Echo.
-    Echo M: Make setting files
-    Echo U: Copy %bak_main% to upper dirs
-    Echo I: Init vars
-    Echo S: Show vars
-    Echo C: Cleanse vars
     Echo.
     Echo E: Exit
     choice /C:ebdpmuscia /T:e,%bak_timeout% /N 

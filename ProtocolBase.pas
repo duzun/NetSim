@@ -1,4 +1,4 @@
-unit VProtocol;
+unit ProtocolBase;
 { Nivelul transport }
 interface
 {-----------------------------------------------------------------------------}
@@ -8,7 +8,7 @@ uses
 {-----------------------------------------------------------------------------}
 type
 { Class baza pentru protocoalele de comunicare }
-  TVProtocol = class(TConnection)
+  TProtocolBase = class(TConnection)
   private
     FID:      ShortString;
     FIDs:     packed array of TBArray;
@@ -76,15 +76,15 @@ implementation
 uses
    SysUtils;
 {-----------------------------------------------------------------------------}
-{ TVProtocol }
+{ TProtocolBase }
 {-----------------------------------------------------------------------------}
-constructor TVProtocol.Create;
+constructor TProtocolBase.Create;
 begin
   inherited Create(AOwner, NameOfFile);
   setlength(FIDs, 0);
 end;
 {-----------------------------------------------------------------------------}
-procedure TVProtocol.SetID(const Value: ShortString);
+procedure TProtocolBase.SetID(const Value: ShortString);
 begin
   if Value = FID then exit;
   FID := Value;
@@ -92,7 +92,7 @@ begin
   if MyAddr <> 0 then IDs[MyAddr] := ToBAr(FID);
 end;
 {-----------------------------------------------------------------------------}
-function  TVProtocol.GetIDs(i: byte): TBArray;
+function  TProtocolBase.GetIDs(i: byte): TBArray;
 begin
   if (i=ToAll) then result:=GenBAr(0,0,0)
   else begin
@@ -101,7 +101,7 @@ begin
   end;
 end;
 {-----------------------------------------------------------------------------}
-procedure TVProtocol.SetIDs(i: byte; const Value: TBArray);
+procedure TProtocolBase.SetIDs(i: byte; const Value: TBArray);
 begin
   if (i=ToAll) then exit;
   if (i = MyAddr)and(i<>0) then ID := BAr2Str(Value)
@@ -114,7 +114,7 @@ begin
   end;
 end;
 {-----------------------------------------------------------------------------}
-function  TVProtocol.SendData;
+function  TProtocolBase.SendData;
 var p, l: word;
 begin
   Result := false;
@@ -127,7 +127,7 @@ begin
   Result := true;
 end;
 {-----------------------------------------------------------------------------}
-function  TVProtocol.SendDataNow;
+function  TProtocolBase.SendDataNow;
 var p: word;
 begin
   p := 0;
@@ -138,41 +138,41 @@ begin
   Result := p;
 end;
 {-----------------------------------------------------------------------------}
-function  TVProtocol.SendCmd; begin Result:=SendData(ToBAr(Cmd), tgt); end;
+function  TProtocolBase.SendCmd; begin Result:=SendData(ToBAr(Cmd), tgt); end;
 {-----------------------------------------------------------------------------}
-function  TVProtocol.Send(cmd:byte; data:TBArray;  tgt:byte=ToAll):boolean;begin Insert(cmd,data); Result:=SendData(data,tgt); end;
-function  TVProtocol.Send(cmd:byte; data:string;   tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendData(BAr,tgt); end;
-function  TVProtocol.Send(cmd:byte; data:byte;     tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendData(BAr,tgt); end;
-function  TVProtocol.Send(cmd:byte; data:word;     tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendData(BAr,tgt); end;
-function  TVProtocol.Send(cmd:byte; data:longword; tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendData(BAr,tgt); end;
-function  TVProtocol.Send(cmd:byte; data:Double;   tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendData(BAr,tgt); end;
+function  TProtocolBase.Send(cmd:byte; data:TBArray;  tgt:byte=ToAll):boolean;begin Insert(cmd,data); Result:=SendData(data,tgt); end;
+function  TProtocolBase.Send(cmd:byte; data:string;   tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendData(BAr,tgt); end;
+function  TProtocolBase.Send(cmd:byte; data:byte;     tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendData(BAr,tgt); end;
+function  TProtocolBase.Send(cmd:byte; data:word;     tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendData(BAr,tgt); end;
+function  TProtocolBase.Send(cmd:byte; data:longword; tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendData(BAr,tgt); end;
+function  TProtocolBase.Send(cmd:byte; data:Double;   tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendData(BAr,tgt); end;
 {-----------------------------------------------------------------------------}
-function TVProtocol.SendType(cmd: byte; data: Integer;  tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Int,      ToBar(data)), tgt); end;
-function TVProtocol.SendType(cmd: byte; data: LongWord; tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_LongWord, ToBar(data)), tgt); end;
-function TVProtocol.SendType(cmd: byte; data: byte;     tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Byte,     ToBar(data)), tgt); end;
-function TVProtocol.SendType(cmd: byte; data: Word;     tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Word,     ToBar(data)), tgt); end;
-function TVProtocol.SendType(cmd: byte; data: Double;   tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Double,   ToBar(data)), tgt); end;
-function TVProtocol.SendType(cmd: byte; data: Char;     tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Char,     ToBar(data)), tgt); end;
-function TVProtocol.SendType(cmd: byte; data: String;   tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_String,   ToBar(data)), tgt); end;
-function TVProtocol.SendTime(cmd: byte; data: TDateTime;tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Time,     ToBar(data)), tgt); end;
+function TProtocolBase.SendType(cmd: byte; data: Integer;  tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Int,      ToBar(data)), tgt); end;
+function TProtocolBase.SendType(cmd: byte; data: LongWord; tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_LongWord, ToBar(data)), tgt); end;
+function TProtocolBase.SendType(cmd: byte; data: byte;     tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Byte,     ToBar(data)), tgt); end;
+function TProtocolBase.SendType(cmd: byte; data: Word;     tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Word,     ToBar(data)), tgt); end;
+function TProtocolBase.SendType(cmd: byte; data: Double;   tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Double,   ToBar(data)), tgt); end;
+function TProtocolBase.SendType(cmd: byte; data: Char;     tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Char,     ToBar(data)), tgt); end;
+function TProtocolBase.SendType(cmd: byte; data: String;   tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_String,   ToBar(data)), tgt); end;
+function TProtocolBase.SendTime(cmd: byte; data: TDateTime;tgt: byte): boolean; begin Result:=Send(cmd, Join(cmd_Time,     ToBar(data)), tgt); end;
 {-----------------------------------------------------------------------------}
-function  TVProtocol.SendCmdNow; begin Result:=SendDataNow(ToBAr(Cmd), tgt)<>0; end;
+function  TProtocolBase.SendCmdNow; begin Result:=SendDataNow(ToBAr(Cmd), tgt)<>0; end;
 {-----------------------------------------------------------------------------}
-function  TVProtocol.SendNow(cmd:byte; data:TBArray;  tgt:byte=ToAll):boolean;begin Insert(cmd,data); Result:=SendDataNow(data,tgt)<>0; end;
-function  TVProtocol.SendNow(cmd:byte; data:String;   tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendDataNow(BAr,tgt)<>0; end;
-function  TVProtocol.SendNow(cmd:byte; data:byte;     tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendDataNow(BAr,tgt)<>0; end;
-function  TVProtocol.SendNow(cmd:byte; data:word;     tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendDataNow(BAr,tgt)<>0; end;
-function  TVProtocol.SendNow(cmd:byte; data:longword; tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendDataNow(BAr,tgt)<>0; end;
-function  TVProtocol.SendNow(cmd:byte; data:Double;   tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendDataNow(BAr,tgt)<>0; end;
+function  TProtocolBase.SendNow(cmd:byte; data:TBArray;  tgt:byte=ToAll):boolean;begin Insert(cmd,data); Result:=SendDataNow(data,tgt)<>0; end;
+function  TProtocolBase.SendNow(cmd:byte; data:String;   tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendDataNow(BAr,tgt)<>0; end;
+function  TProtocolBase.SendNow(cmd:byte; data:byte;     tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendDataNow(BAr,tgt)<>0; end;
+function  TProtocolBase.SendNow(cmd:byte; data:word;     tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendDataNow(BAr,tgt)<>0; end;
+function  TProtocolBase.SendNow(cmd:byte; data:longword; tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendDataNow(BAr,tgt)<>0; end;
+function  TProtocolBase.SendNow(cmd:byte; data:Double;   tgt:byte=ToAll):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=SendDataNow(BAr,tgt)<>0; end;
 {-----------------------------------------------------------------------------}
-function  TVProtocol.ListSendCmd(Cmd: byte; tgt: TBArray): boolean;
+function  TProtocolBase.ListSendCmd(Cmd: byte; tgt: TBArray): boolean;
 var BAr: TBArray;
 begin
   BAr := ToBAr(Cmd);
   Result:=ListSendData(BAr, tgt);
 end;
 {-----------------------------------------------------------------------------}
-function  TVProtocol.ListSendData(data, tgt: TBArray): boolean;
+function  TProtocolBase.ListSendData(data, tgt: TBArray): boolean;
 var i: word;    r: boolean;
 begin
   i:=length(tgt);
@@ -184,21 +184,21 @@ begin
   Result:=r;
 end;
 {-----------------------------------------------------------------------------}
-function  TVProtocol.ListSend(cmd:byte; data:TBArray;  tgt:TBArray): boolean;begin Insert(cmd,data); Result:=ListSendData(data,tgt); end;
-function  TVProtocol.ListSend(cmd:byte; data:String;   tgt:TBArray):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=ListSendData(BAr,tgt); end;
-function  TVProtocol.ListSend(cmd:byte; data:byte;     tgt:TBArray):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=ListSendData(BAr,tgt); end;
-function  TVProtocol.ListSend(cmd:byte; data:word;     tgt:TBArray):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=ListSendData(BAr,tgt); end;
-function  TVProtocol.ListSend(cmd:byte; data:longword; tgt:TBArray):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=ListSendData(BAr,tgt); end;
-function  TVProtocol.ListSend(cmd:byte; data:Double;   tgt:TBArray):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=ListSendData(BAr,tgt); end;
+function  TProtocolBase.ListSend(cmd:byte; data:TBArray;  tgt:TBArray): boolean;begin Insert(cmd,data); Result:=ListSendData(data,tgt); end;
+function  TProtocolBase.ListSend(cmd:byte; data:String;   tgt:TBArray):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=ListSendData(BAr,tgt); end;
+function  TProtocolBase.ListSend(cmd:byte; data:byte;     tgt:TBArray):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=ListSendData(BAr,tgt); end;
+function  TProtocolBase.ListSend(cmd:byte; data:word;     tgt:TBArray):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=ListSendData(BAr,tgt); end;
+function  TProtocolBase.ListSend(cmd:byte; data:longword; tgt:TBArray):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=ListSendData(BAr,tgt); end;
+function  TProtocolBase.ListSend(cmd:byte; data:Double;   tgt:TBArray):boolean;var BAr:TBArray;begin BAr:=ToBAr(data,1); BAr[0]:=cmd; Result:=ListSendData(BAr,tgt); end;
 {-----------------------------------------------------------------------------}
-function TVProtocol.ListSendType(cmd: byte; data: Integer;  tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Int,      ToBar(data)), tgt); end;
-function TVProtocol.ListSendType(cmd: byte; data: LongWord; tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_LongWord, ToBar(data)), tgt); end;
-function TVProtocol.ListSendType(cmd: byte; data: byte;     tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Byte,     ToBar(data)), tgt); end;
-function TVProtocol.ListSendType(cmd: byte; data: Word;     tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Word,     ToBar(data)), tgt); end;
-function TVProtocol.ListSendType(cmd: byte; data: Double;   tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Double,   ToBar(data)), tgt); end;
-function TVProtocol.ListSendType(cmd: byte; data: Char;     tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Char,     ToBar(data)), tgt); end;
-function TVProtocol.ListSendType(cmd: byte; data: String;   tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_String,   ToBar(data)), tgt); end;
-function TVProtocol.ListSendTime(cmd: byte; data: TDateTime;tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Time,     ToBar(data)), tgt); end;
+function TProtocolBase.ListSendType(cmd: byte; data: Integer;  tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Int,      ToBar(data)), tgt); end;
+function TProtocolBase.ListSendType(cmd: byte; data: LongWord; tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_LongWord, ToBar(data)), tgt); end;
+function TProtocolBase.ListSendType(cmd: byte; data: byte;     tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Byte,     ToBar(data)), tgt); end;
+function TProtocolBase.ListSendType(cmd: byte; data: Word;     tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Word,     ToBar(data)), tgt); end;
+function TProtocolBase.ListSendType(cmd: byte; data: Double;   tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Double,   ToBar(data)), tgt); end;
+function TProtocolBase.ListSendType(cmd: byte; data: Char;     tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Char,     ToBar(data)), tgt); end;
+function TProtocolBase.ListSendType(cmd: byte; data: String;   tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_String,   ToBar(data)), tgt); end;
+function TProtocolBase.ListSendTime(cmd: byte; data: TDateTime;tgt: TBArray): boolean; begin Result:=ListSend(cmd, Join(cmd_Time,     ToBar(data)), tgt); end;
 {-----------------------------------------------------------------------------}
 
 end.

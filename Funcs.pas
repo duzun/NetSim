@@ -149,7 +149,7 @@ var p, l: word;
 begin
     p:=0;
     l := length(frame);
-    for i:=0 to l-1 do ;
+    for i:=0 to l-1 do {???};
 end;
 {-----------------------------------------------------------------------------}
 function SplitFrame(var frame: TBArray;var p, len, src, tgt: byte): word;  overload;
@@ -461,7 +461,7 @@ begin
   i := size;
   while i>0 do begin
     dec(i);
-    r := (r shl 8) or BAr[l]; {BAr[l]: byte}
+    r := (r shl 8) or BAr[i]; {BAr[l]: byte}
   end;
   dec(l, size);
   while i<l do begin

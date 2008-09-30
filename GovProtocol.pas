@@ -1,6 +1,6 @@
-unit PrHost;
+unit GovProtocol;
 { Nivelul sesiune }
-{ Aici este encapsulat protocolul de comunicare cu moderator }
+{ Aici este encapsulat protocolul de comunicare cu moderator (Governator) }
 {-----------------------------------------------------------------------------
   Descriere: 
   Inainte de a trimite informatii, fiecare participant cere "voie" 
@@ -15,21 +15,20 @@ unit PrHost;
 interface
 {-----------------------------------------------------------------------------}
 uses
-  VProtocol, Funcs, IOStream, CmdByte, 
+  ProtocolBase, IOStream, Funcs, CmdByte, 
   ExtCtrls, Classes, SysUtils;
 {-----------------------------------------------------------------------------}
 type
-  TPrHost = class(TVProtocol)
+  TGovProtocol = class(TProtocolBase)
      LastAddr: byte;
      RetryCounter: word;
   private
     StateOnRead: word;
-    ToWrote: boolean;
 
   public
     constructor Create(AOwner: TComponent; FileName: ShortString = '');
 
-    function getState():word;
+    function  getState():word;
     
     function  CanWrite: boolean;
     function  CanRead:  boolean;
@@ -40,19 +39,19 @@ type
 {-----------------------------------------------------------------------------}
 implementation
 {-----------------------------------------------------------------------------}
-{ TPrHost }
+{ TGovProtocol }
 {-----------------------------------------------------------------------------}
-constructor TPrHost.Create;
-begin
+constructor TGovProtocol.Create;
+begin  
   inherited Create(AOwner, FileName);
   LastAddr := $0;
   Writing  := false;
   OnTimer  := TimerProc;
 end;                                             
 {-----------------------------------------------------------------------------}
-function TPrHost.getState: word; begin Result := StateOnRead; end;
+function TGovProtocol.getState: word; begin Result := StateOnRead; end;
 {-----------------------------------------------------------------------------}
-procedure TPrHost.OnConect();
+procedure TGovProtocol.OnConect();
 begin
   StateOnRead := 0; // begining 
 //  MyAddr := 0;  
@@ -60,49 +59,41 @@ begin
   LastAddr := 0;  
 end;
 {-----------------------------------------------------------------------------}
-procedure TPrHost.OnRead;
+procedure TGovProtocol.OnRead;
 begin
     case ReadResult of
      IO_Failed: State := 0; // Reinitializare la eroare
      IO_NoData: ;
      IO_OK:
         if src = MyAddr then     
-           SendLog('> '+byte2str(tgt)+'| '+BAr2ByteStr(RBAr, len+3))
+           SendLog(byte2str(tgt)+'<-| '+BAr2ByteStr(RBAr, len+4))
         else    
-           SendLog('< '+byte2str(src)+'| '+BAr2ByteStr(RBAr, len+3));
+           SendLog(byte2str(src)+'->| '+BAr2ByteStr(RBAr, len+4));
     end;
   case State of
   0:begin  // Initializare
-    SendLog('OnRead: State='+inttostr(State));
-    RetryCounter := 4; // Nr de incercari
-    if MyAddr <> 0 then State := 2 else State := 3;
-{
-    case ReadResult of
-     IO_OK:     State := 1; // Ma conectez...
-     IO_NoData: State := 2; // Nimeni conectat
-     IO_Failed: exit;       // Mai citeste o data
+     SendLog('OnRead: State='+inttostr(State));
+     RetryCounter := 4; // Nr de incercari
+     if MyAddr <> 0 then State := 2 else State := 3;
     end;
-}
-   end;
   1:begin  // Conectare
-    dec(RetryCounter);
-    SendLog('OnRead: State='+inttostr(State)+', '+inttostr(RetryCounter));
-    case ReadResult of
-     IO_OK:     State := 3;
-     IO_NoData: if(RetryCounter=0)then State:=2 else exit;
-     IO_Failed: {???};
+      dec(RetryCounter);
+      SendLog('OnRead: State='+inttostr(State)+', '+inttostr(RetryCounter));
+      case ReadResult of
+       IO_OK:     State := 3;
+       IO_NoData: if(RetryCounter=0)then State:=2 else exit;
+       IO_Failed: {???};
+      end;
+      OnRead(State);
     end;
-    OnRead(State);
-  end;
   2:begin  // Nimeni online
-    SendLog('OnRead: State='+inttostr(State)+', MyAddr='+inttostr(MyAddr));
-    MaxAddr  := $00;
-    if MyAddr = 0 then MyAddr := $01;
-    State    := 5;
+      SendLog('OnRead: State='+inttostr(State)+', MyAddr='+inttostr(MyAddr));
+      MaxAddr  := $00;
+      if MyAddr = 0 then MyAddr := $01;
+      State    := 5;
   end;
   3:begin  // Asteapta adresa
     if(ReadResult=IO_OK)then begin
-//       SendLog('OnRead: St:'+inttostr(State));
       if(tgt=$00)and(len>0)then
         {/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/}
         case Data[0] of
@@ -122,7 +113,6 @@ begin
   end;
   4:begin    // Spune tuturor ca sunt prezent
     if(ReadResult=IO_OK)then begin
-//       SendLog('OnRead: St='+inttostr(State)+', cmd='+byte2str(RBAr[p]));
       if(src<>MyAddr)and((tgt=$00)or(tgt=MyAddr))and(len>0)then
         {/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/}
         case Data[0] of
@@ -169,26 +159,39 @@ begin
             SendNow(cmd_giveAddr or cmd_OK, MaxAddr+1, src);
          end;
          
-      cmd_write:   
+      cmd_readID: 
+         begin
+//            SendCmdNow(cmd_readID or cmd_Ok); 
+         end;
+
+      cmd_tellMe:
+         begin
+            Writing := true;
+         end;
+      
+      cmd_OK or cmd_giveAddr:
+         begin
+            if MyAddr = MaxAddr then dec(MaxAddr);
+            MyAddr := Data[1];
+            SendCmdNow(cmd_readID);
+         end;
+         
+      cmd_OK or cmd_readID: 
+         IDs[src] := Copy(Data,1,len-1);
+         
+      cmd_Data:            
+         begin
+            LastBAr := Copy(Data, 1);
+            IncBAr(LastBAr, 1, src);
+            RSBuf.Each := LastBAr;
+         end;
+         
+      else 
          begin
             LastBAr := Data;
             IncBAr(LastBAr, 1, src);
             RSBuf.Each := LastBAr;
          end;
-         
-      cmd_tellMe:
-         begin
-            Writing := true;
-//             dec(CycleCounter, CycleCounter and 1);
-         end;
-         
-      cmd_OK or cmd_giveAddr:
-         MyAddr := Data[1];
-         
-      cmd_OK or cmd_readID: 
-         IDs[src] := Copy(Data,1,len-1);
-         
-      else
       end;
       {/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/}
     end;
@@ -200,7 +203,7 @@ begin
   end;
 end;
 {-----------------------------------------------------------------------------}
-procedure TPrHost.TimerProc;
+procedure TGovProtocol.TimerProc;
 begin
    // --- After read ---
    if Reading then begin
@@ -228,12 +231,12 @@ begin
    Writing := CanWrite; // --- Write only one frame in the next Cycle ---
 end;
 {-----------------------------------------------------------------------------}
-function TPrHost.CanRead: boolean;
+function TGovProtocol.CanRead: boolean;
 begin
   Result := CycleCount and 1 = 1;
 end;
 {-----------------------------------------------------------------------------}
-function TPrHost.CanWrite: boolean;
+function TGovProtocol.CanWrite: boolean;
 begin
    Result := (MyAddr<>$01) and (CycleCount and 3 = 2) or (MyAddr=$01) and (CycleCount and 3 = 0);
 end;

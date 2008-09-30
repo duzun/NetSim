@@ -17,6 +17,7 @@ const
  cmd_tellMe    = $30;
  cmd_giveAddr  = $31;
  cmd_readID    = $32;
+ cmd_Data      = $3F;
  
  { Data Types }
  cmd_Byte      = $01;
@@ -28,10 +29,12 @@ const
  cmd_Time      = $07;
  cmd_Double    = $08;
  
-  { Application level (imperative) }
- cmd_close     = $20;
- cmd_write     = $21;
- cmd_clear     = $22;
+ { Application level (imperative) }
+ cmd_close         = $20;
+ cmd_write         = $21;
+ cmd_clear         = $22;
+ cmd_set_form_size = $23;
+ cmd_get_on_top    = $24;
   
 
 {-----------------------------------------------------------------------------}

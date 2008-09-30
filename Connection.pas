@@ -37,6 +37,7 @@ type
     procedure SetOnTimer(const Value: TNotifyEvent);
     procedure SetFConected(const Value: boolean);
     property  FConected: boolean  read GetFConected write SetFConected;
+    Procedure TimerProc(Sender: TObject);
   protected
     FTimer:    TTimer;
     FOwner:    TComponent;
@@ -70,7 +71,6 @@ type
 
     procedure OnConect();    virtual;
     procedure OnDisconect(); virtual;
-    Procedure TimerProc(Sender: TObject);
 
     constructor Create(AOwner: TComponent; NameOfFile: ShortString = '');
     destructor  Destroy; override;
@@ -244,6 +244,7 @@ begin
    if not r then exit;
    Data  := Copy(RBAr, p, len);
    Cycle := BAr2Int(RBAr, p+len+1, 4);
+   Result := r;
 end;
 {-----------------------------------------------------------------------------}
 procedure TConnection.SetFConected; begin if Value then FConectTime:=Time else FConectTime:=0; end;
