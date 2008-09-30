@@ -1,4 +1,5 @@
 unit PrHost;
+{ Nivelul sesiune }
 { Aici este encapsulat protocolul de comunicare cu moderator }
 {-----------------------------------------------------------------------------
   Descriere: 
@@ -14,7 +15,7 @@ unit PrHost;
 interface
 {-----------------------------------------------------------------------------}
 uses
-  VProtocol, Funcs, IOStreams, CmdByte, 
+  VProtocol, Funcs, IOStream, CmdByte, 
   ExtCtrls, Classes, SysUtils;
 {-----------------------------------------------------------------------------}
 type
@@ -23,12 +24,15 @@ type
      RetryCounter: word;
   private
     StateOnRead: word;
+    ToWrote: boolean;
 
   public
     constructor Create(AOwner: TComponent; FileName: ShortString = '');
 
     function getState():word;
     
+    function  CanWrite: boolean;
+    function  CanRead:  boolean;
     procedure OnConect(); override;
     procedure OnRead(var State: word); 
     procedure TimerProc(Sender: TObject); 
@@ -41,9 +45,10 @@ implementation
 constructor TPrHost.Create;
 begin
   inherited Create(AOwner, FileName);
-  LastAddr    := $0;
-  OnTimer     := TimerProc;
-end;
+  LastAddr := $0;
+  Writing  := false;
+  OnTimer  := TimerProc;
+end;                                             
 {-----------------------------------------------------------------------------}
 function TPrHost.getState: word; begin Result := StateOnRead; end;
 {-----------------------------------------------------------------------------}
@@ -71,12 +76,14 @@ begin
     SendLog('OnRead: State='+inttostr(State));
     RetryCounter := 4; // Nr de incercari
     if MyAddr <> 0 then State := 2 else State := 3;
-{    case ReadResult of
+{
+    case ReadResult of
      IO_OK:     State := 1; // Ma conectez...
      IO_NoData: State := 2; // Nimeni conectat
      IO_Failed: exit;       // Mai citeste o data
     end;
-}  end;
+}
+   end;
   1:begin  // Conectare
     dec(RetryCounter);
     SendLog('OnRead: State='+inttostr(State)+', '+inttostr(RetryCounter));
@@ -89,9 +96,9 @@ begin
   end;
   2:begin  // Nimeni online
     SendLog('OnRead: State='+inttostr(State)+', MyAddr='+inttostr(MyAddr));
-    MaxAddr := $00;
-    if MyAddr = 0 then MyAddr  := $01;
-    State   := 5;
+    MaxAddr  := $00;
+    if MyAddr = 0 then MyAddr := $01;
+    State    := 5;
   end;
   3:begin  // Asteapta adresa
     if(ReadResult=IO_OK)then begin
@@ -195,8 +202,8 @@ end;
 {-----------------------------------------------------------------------------}
 procedure TPrHost.TimerProc;
 begin
-   { Reading }
-   if(CycleCounter and 1 = 0)then begin 
+   // --- After read ---
+   if Reading then begin
       p:=0;
       if ReadResult = IO_OK then begin
         SplitRBAr;
@@ -206,37 +213,29 @@ begin
         len:=0;
         src:=0;
       end;
-      OnRead(StateOnRead); // --- Data parsing ---
-
-     { $01 is DJ, Boss }
-     if(MyAddr=$01) then begin
-       if(CycleCounter and 2 = 0)then begin
+      OnRead(StateOnRead);  // --- Data parsing ---
+   // --- After write  ---
+   end else if Writing then
+      { $01 is DJ, Boss }
+      if(MyAddr=$01)then begin
           inc(LastAddr);     // Who can write?
           if LastAddr > MaxAddr then LastAddr:=0;
-          if LastAddr <> MyAddr then begin
-//             SetLength(LastBAr,3);
-//             LastBAr[0]:=cmd_tellMe;
-//             LastBAr[1]:=$FF and CycleCounter;
-//             LastBAr[2]:=$FF and (CycleCounter shr 8);
-            SendCmd(cmd_tellMe, LastAddr);
-          end;
-          Writing := true; // write in the next Cycle
-       end
-     end else begin
-{       if (src=$01) then begin
-         if(tgt=$00)and(LastAddr<MyAddr)and(StateOnRead=5) then begin
-            StateOnRead := 3;
-            MyAddr := 0;
-         end else LastAddr := tgt;
-       end;
-}     end;
-     
-   end else begin
-  { Writing }
-     if(Writing)then begin // --- Have right to write  ---
-       Reading := true;   // --- Can write only one frame ---
-     end else          
-   end;
+          if LastAddr <> MyAddr then SendCmd(cmd_tellMe, LastAddr);
+      end else begin
+      
+	  end;
+   Reading := CanRead;  // --- Read in the next Cycle
+   Writing := CanWrite; // --- Write only one frame in the next Cycle ---
+end;
+{-----------------------------------------------------------------------------}
+function TPrHost.CanRead: boolean;
+begin
+  Result := CycleCount and 1 = 1;
+end;
+{-----------------------------------------------------------------------------}
+function TPrHost.CanWrite: boolean;
+begin
+   Result := (MyAddr<>$01) and (CycleCount and 3 = 2) or (MyAddr=$01) and (CycleCount and 3 = 0);
 end;
 {-----------------------------------------------------------------------------}
 end.

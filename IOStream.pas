@@ -1,5 +1,5 @@
-unit IOStreams;
-{ I Nivel: fizic }
+unit IOStream;
+{ Nivelul fizic - scrierea si citirea datelor }
 interface
 uses
   StrStackCl, Funcs, CmdByte;
@@ -15,9 +15,9 @@ const
   IO_Already   = $10;
   IO_NotReady  = $20;
 
-type 
 {-----------------------------------------------------------------------------}
-  TIOStr = class(TObject)
+type 
+  TIOStream = class(TObject)
   {=========================}
     WSBuf, RSBuf: TStrStack;      // Write and Read string buffers
   {=========================}
@@ -32,27 +32,33 @@ type
     F                             : BFile;       // File Pointer
     FN                            : ShortString; // Conection FileName
     RBAr, WBAr, LastBAr           : TBArray;     // Byte Buffers
-    ReadResult, WriteResult       : byte;
+    ReadResult,    WriteResult    : byte;        //
     LastReadCycle, LastWriteCycle : integer;
-    ReadCycle, WriteCycle         : word;
+    ReadCycle,     WriteCycle     : word;
     OffSetCycle                   : integer;
   {=========================}
   public
-    property Opened    : Boolean     read FOpened write SetOpened;
-    property FileName  : ShortString read FN      write SetFileName;
+    property Opened    : Boolean     read FOpened write SetOpened;   // Connect tu FileName
+    property FileName  : ShortString read FN      write SetFileName; // Open on assign 
     property CycleCount: integer     read GetCycleCounter write SetCycleCounter;
 
     function Open(NameOfFile: ShortString)  : Boolean;
     function MkFile(NameOfFile: ShortString): word;
+    function DelFile(): word;
 
-	function NoReadCount: word;
-	function NoWriteCount: word;
+	function NoReadCount   : word;
+	function NoWriteCount  : word;
+	function ReadPackets   : word;
+	function WrittenPackets: word;
 
     function WriteSBuf: word;
     function ReadSBuf : word;
 
     function WriteByte(b: byte; poz: byte = 0)   : word;
     function ReadByte(var b: byte; poz: byte = 0): word;
+    
+    procedure Reset_IO;
+    procedure Reset_IO_Buffers;
     
     constructor Create(NameOfFile: ShortString = '');
     destructor  Destroy; override;
@@ -64,25 +70,45 @@ implementation
 uses
    ExtCtrls, SysUtils;
 {-----------------------------------------------------------------------------}
-{ TIOStr }
-constructor TIOStr.Create;
+{ TIOStream }
+constructor TIOStream.Create;
 begin
   inherited Create;
   WSBuf         := TStrStack.Create;
   RSBuf         := TStrStack.Create;
   FN            := NameOfFile;
   FOpened       := false;
+  Reset_IO;
+end;
+{-----------------------------------------------------------------------------}
+procedure TIOStream.Reset_IO_Buffers;
+begin
+  WSBuf.Reset;
+  RSBuf.Reset;
+  RBAr:=0; WBAr:=0; LastBAr:=0;
+end;
+{-----------------------------------------------------------------------------}
+procedure TIOStream.Reset_IO;
+begin
   LastReadCycle := 0;
   LastWriteCycle:= 0;
   OffSetCycle   := 0;
   WriteCycle    := 0;
   ReadCycle     := 0;
+
+  RBAr:=0; WBAr:=0; LastBAr:=0;
 end;
 {-----------------------------------------------------------------------------}
-function TIOStr.NoReadCount: word;  begin Result := CycleCount - LastReadCycle; end;
-function TIOStr.NoWriteCount: word; begin Result := CycleCount - LastWriteCycle; end;
+{ Cicluri de inactivitate... }
+function TIOStream.NoReadCount: word;  begin Result := CycleCount - LastReadCycle; end;
+function TIOStream.NoWriteCount: word; begin Result := CycleCount - LastWriteCycle; end;
 {-----------------------------------------------------------------------------}
-function TIOStr.ReadSBuf;
+{ Cantitatea de pakete citite / scrise }
+function TIOStream.ReadPackets; begin Result := ReadCycle; end;
+function TIOStream.WrittenPackets; begin Result := WriteCycle; end;
+{-----------------------------------------------------------------------------}
+{ Citeste continutul fisierului in RBAr }
+function TIOStream.ReadSBuf;
 var l: integer;
 begin
 {$I-}
@@ -106,7 +132,8 @@ begin
     Result := ReadResult;
 end;
 {-----------------------------------------------------------------------------}
-function TIOStr.WriteSBuf;
+{ Scrie datele in fisier }
+function TIOStream.WriteSBuf;
 var l: word;
 begin
   if(Length(WBAr)>0)then begin
@@ -137,34 +164,12 @@ begin
   Result := WriteResult;
 end;
 {-----------------------------------------------------------------------------}
-function TIOStr.WriteByte;
-begin
-  Result:=0;
-  {$I-}
-  repeat
-      Seek(f, poz);
-      write(f, b);
-  until IOResult = 0;
-  {$I+}
-  Result:=1;
-end;
+{ Functii rudimentare }
+function TIOStream.WriteByte;begin Result:=0; {$I-} repeat Seek(f, poz); write(f, b); until IOResult=0; {$I+} Result:=1;end;
+function TIOStream.ReadByte; begin Result := 0; {$I-} if FileSize(f)=0 then b:=0 else begin repeat Seek(f, poz); read(f, b); until IOResult=0; Result:=1; end; {$I+} end;
 {-----------------------------------------------------------------------------}
-function TIOStr.ReadByte;
-begin
-    Result := 0;
-    {$I-}
-    if FileSize(f)=0 then b:=0
-    else begin
-      repeat
-        Seek(f, poz);
-        read(f, b);
-      until IOResult = 0;
-      Result:=1;
-    end;
-    {$I+}
-end;
-{-----------------------------------------------------------------------------}
-function TIOStr.MkFile;
+{ Incearca sa creeze fisierul de legatura, daca nu exista.  }
+function TIOStream.MkFile;
 var dir: ShortString;
 begin
   if NameOfFile = '' then NameOfFile := FN;
@@ -189,13 +194,27 @@ begin
   end;
 end;
 {-----------------------------------------------------------------------------}
-function TIOStr.Open(NameOfFile: ShortString): Boolean;
+function TIOStream.DelFile;
+begin
+   Opened := false;
+   if not FileExists(FN) then
+     Result := IO_Already or IO_OK
+   else try
+     if DeleteFile(FN) then Result := IO_OK
+                       else Result := IO_Failed;
+   except Result := IO_Failed;
+   end;
+end;
+{-----------------------------------------------------------------------------}
+{ Deschide fisierul NameOfFile }
+function TIOStream.Open(NameOfFile: ShortString): Boolean;
 begin
   FileName := NameOfFile;
   Result   := Opened;
 end;
 {-----------------------------------------------------------------------------}
-procedure TIOStr.SetOpened(const Value: Boolean);
+{ Functi private }
+procedure TIOStream.SetOpened(const Value: Boolean);
 begin
    {$I-}
    if Value and not FOpened and (MkFile(FN) and IO_OK <> 0)then
@@ -214,18 +233,20 @@ begin
    {$I+}
 end;
 {-----------------------------------------------------------------------------}
-procedure TIOStr.SetFileName(const Value: ShortString);
+procedure TIOStream.SetFileName(const Value: ShortString);
 begin
   if Value <> FN then begin
     Opened := false;
     FN     := Value;
   end;
-  if Value <> '' then Opened := true;
+  if Value <> '' then Opened := true
+                 else DelFile;
 end;
 {-----------------------------------------------------------------------------}
-destructor TIOStr.Destroy; begin Opened := false; inherited Destroy; end;
+destructor TIOStream.Destroy; begin Opened := false; inherited Destroy; end;
 {-----------------------------------------------------------------------------}
-procedure TIOStr.SetCycleCounter;begin OffSetCycle := Value - (ReadCycle + WriteCycle); end;
-function TIOStr.GetCycleCounter; begin Result := ReadCycle + WriteCycle + OffSetCycle; end;
+procedure TIOStream.SetCycleCounter; begin OffSetCycle := Value - (ReadCycle + WriteCycle); end;
+function  TIOStream.GetCycleCounter; begin Result := ReadCycle + WriteCycle + OffSetCycle; end;
 {-----------------------------------------------------------------------------}
+
 end.

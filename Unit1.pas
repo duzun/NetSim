@@ -3,7 +3,7 @@ unit Unit1;
 interface
 
 uses
-  VProtocol, PrHost, Funcs, BufferCL, IOStreams, CmdByte,
+  VProtocol, PrHost, Funcs, BufferCL, IOStream, CmdByte,
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ActnList, ExtCtrls, ShellAPI, ToolWin, ComCtrls,
   Buttons, Menus, CheckLst;
@@ -24,7 +24,6 @@ type
     AddrList: TCheckListBox;
     Button4: TButton;
     Button1: TButton;
-    CheckBox1: TCheckBox;
     MyAddrEdit: TEdit;
     MainMenu1: TMainMenu;
     Action1: TMenuItem;
@@ -46,9 +45,11 @@ type
     ARunClone: TAction;
     Timer1: TTimer;
     Label1: TLabel;
-    Label2: TLabel;
     Memo3: TMemo;
     TabSheet2: TTabSheet;
+    LInfo: TLabel;
+    Button2: TButton;
+    Button3: TButton;
     procedure OnStateChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -73,7 +74,8 @@ type
       Y: Integer);
     procedure StatusBar1DblClick(Sender: TObject);
     procedure ARunCloneExecute(Sender: TObject);
-    procedure Panel1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
   private
     { Private declarations }
     ToClose:boolean;
@@ -84,7 +86,7 @@ type
     { Public declarations }
     IO: TVProtocol;
     tgt: TBArray;
-    procedure ShowMsg(s: TBArray);
+    procedure ShowMsg(s: TBArray; t: byte);
     procedure FormResize(s: TBArray);
 
   end;
@@ -126,12 +128,9 @@ begin
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Button4Click(Sender: TObject);
-var ba: TBArray;
-    i: word;
 begin
-  ba :=  ToBAr(#2+Memo1.Text);
-  if Length(tgt)=0 then IO.Send(cmd_write, ba)
-                   else IO.ListSend(cmd_write, ba, tgt);
+  if Length(tgt)=0 then IO.SendType(cmd_write, Memo1.Text)
+                   else IO.ListSendType(cmd_write, Memo1.Text, tgt);
   Memo1.Clear;                 
 end;
 {-----------------------------------------------------------------------------}
@@ -141,12 +140,6 @@ var i:  word;
     cmd, src: byte;
 begin
   Label1.Caption := IntToStr((IO as TPrHost).getState);
-  if IO.Writing then
-     Label2.Caption := 'Writing'
-  else if IO.Reading then
-     Label2.Caption := 'Reading'
-  else
-     Label2.Caption := '...';
 
   if IO.RSBuf.ready <> 0 then with IO.RSBuf do begin
    repeat
@@ -155,13 +148,11 @@ begin
      cmd := bf[1];
      src := bf[i];
 //     setlength(bf, i);
-     if CheckBox1.Checked then begin
-        Memo2.Lines.Append(BAr2Str(bf));
-     end;
      case cmd of
-        1: Close;
-        2: ShowMsg(bf);
-        3: FormResize(bf);
+        cmd_close: Close;
+        cmd_clear: AClearTextExecute(Memo2);
+//        10: FormResize(bf);
+        else ShowMsg(bf, cmd);
      end;
    until ready = 0;
   end;
@@ -178,7 +169,7 @@ begin
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.ADisconectExecute(Sender: TObject);
-begin  Cnter := Retries;  while not IO.Disconect(Cnter<>0) do dec(Cnter); PutText(Sender, 'Disconected');end;
+begin  Cnter := Retries;  while not IO.Disconect(Cnter=0) do dec(Cnter); PutText(Sender, 'Disconected');end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.AConDeconExecute(Sender: TObject);
 begin
@@ -189,7 +180,7 @@ begin
     AConectExecute(Sender);
     PutText(Sender, 'Dis&conect');
   end;
-  AWriteInfoExecute(Sender);  
+  AWriteInfoExecute(Sender);
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.ATimmerOnOffExecute(Sender: TObject);
@@ -230,7 +221,7 @@ begin
 
   if Timer1.Enabled then PutText(Timer1M, 'Timer On')
                     else PutText(Timer1M, 'Timer Off');
-  
+
 end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.MyAddrEditExit; begin  IO.ID := MyAddrEdit.Text; end;
@@ -239,6 +230,28 @@ procedure TForm1.AWriteInfoExecute(Sender: TObject);
 var i:word;
     s:string;
 begin
+  with IO do begin
+    PutText(LInfo, '' +
+    #13#10#9'~ TIOStream ~' + #13#10 +
+    'Opened: '#9 + Bool2Str(Opened) + #13#10 +
+    'Chanel: '#9 + FileName + #13#10 +
+    'CycleCount:'#9 + IntToStr(CycleCount) + #13#10 +
+    'NoReadCount:'#9 + IntToStr(NoReadCount) + #13#10 +
+    'NoWriteCount:'#9 + IntToStr(NoWriteCount) + #13#10 +
+    'Received:'#9 + IntToStr(ReadPackets) + #13#10 +
+    'Sent:'#9#9 + IntToStr(WrittenPackets) + #13#10 +
+
+    #13#10#9'~ TConnection ~' + #13#10 +
+    'My Name: '#9 + ID + #13#10 +
+    'My Address: '#9 + '$' + byte2str(MyAddr) + #13#10 +
+    'Max Addr: '#9 + '$' + byte2str(MaxAddr) + #13#10 +
+    'Connected:'#9 + TimeToStr(Time-ConectionTime) + #13#10 +
+    'Reading: '#9 + Bool2Str(Reading) + #13#10 +
+    'Writing: '#9 + Bool2Str(Writing) + #13#10 +
+    'BaudRate:'#9 + IntToStr(BaudRate) + #13#10 +
+    '');
+  end;
+
   with StatusBar1 do begin
     if IO.Conected then begin
        Panels[0].Text   := 'Connected';
@@ -248,8 +261,13 @@ begin
     if Timer1.Enabled then Panels[1].Text := 'Timer On'
                       else Panels[1].Text := 'Timer Off';
     Panels[2].Text := 'Addr: '+byte2str(IO.MyAddr);
-    Panels[3].Text := IntToStr(IO.getCycleCount())+':'+IntToStr(IO.getBaudCount());
-    Panels[4].Text := ExtractFileName(IO.FileName);
+    Panels[3].Text := IntToStr(IO.CycleCount);
+    if IO.Writing then
+       Panels[4].Text := 'Writing'
+    else if IO.Reading then
+       Panels[4].Text := 'Reading'
+    else
+       Panels[4].Text := '...';
 
     with AddrList do begin
       setLength(tgt,0);
@@ -265,9 +283,7 @@ begin
       end;
       if Checked[0] then SetLength(tgt,0);
     end;
-    if MyAddrEdit.Text <> IO.ID
-    then
-    IO.ID := MyAddrEdit.Text;
+    if MyAddrEdit.Text <> IO.ID then IO.ID := MyAddrEdit.Text;
   end;
 end;
 {-----------------------------------------------------------------------------}
@@ -286,17 +302,30 @@ end;
 procedure TForm1.ACloseAllExecute(Sender: TObject);
 begin
   if IO.Conected then
-      if length(tgt)=0 then IO.Send(cmd_write, GenBAr(1,0,1), ToAll);
-  ToClose := true;    
+      if length(tgt)=0 then IO.Send(cmd_write, cmd_close, ToAll);
+  ToClose := true;
   ACloseExecute(Sender);
 end;
 {-----------------------------------------------------------------------------}
-procedure TForm1.ShowMsg(s: TBArray);
+procedure TForm1.ShowMsg;
 var src: byte;
+    msg: string;
+    BAr: TBArray;
 begin
   src := PopBAr(s);
   Memo2.Lines.Append(BAr2Str(IO.IDs[src])+':');
-  Memo2.Lines.Append(BAr2Str(Copy(s,2)));
+  case t of
+  cmd_Byte    : msg := byte2str(BAr2Word(s,2)and $FF);
+  cmd_Word    : msg := IntToStr(BAr2Word(s,2));
+  cmd_Int     : msg := IntToStr(BAr2Int(s, 2));
+  cmd_LongWord: msg := IntToStr(BAr2LongWord(s, 2));
+  cmd_Char    : msg := chr(BAr2Word(s,2)and $FF);
+  cmd_String  : msg := BAr2Str(Copy(s,2));
+  cmd_Time    : msg := TimeToStr(BAr2Double(s, 2));
+  cmd_Double  : msg := FloatToStr(BAr2Double(s, 2));
+  else          msg := 'Unknown #'+byte2str(t);
+  end;
+  Memo2.Lines.Append(msg);
   Memo2.Lines.Append('~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
 end;
 {-----------------------------------------------------------------------------}
@@ -309,18 +338,11 @@ end;
 {-----------------------------------------------------------------------------}
 procedure TForm1.Button1Click(Sender: TObject);
 begin
-  if length(tgt)=0 then IO.Send(cmd_write, GenBAr(1,0,1), ToAll)
-                   else IO.ListSend(cmd_write, GenBAr(1,0,1), tgt);
+  if length(tgt)=0 then IO.Send(cmd_write, cmd_close, ToAll)
+                   else IO.ListSend(cmd_write, cmd_close, tgt);
 end;
 {-----------------------------------------------------------------------------}
-
-procedure TForm1.StatusBar1MouseMove(Sender: TObject; Shift: TShiftState;
-  X, Y: Integer);
-begin
-  FX := X;
-  FY := y;
-end;
-
+procedure TForm1.StatusBar1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer); begin FX := X;  FY := y; end;
 procedure TForm1.StatusBar1DblClick(Sender: TObject);
 var PanelNr: byte;
     X: integer;
@@ -342,20 +364,31 @@ begin
     end;
 end;
 
-procedure TForm1.ARunCloneExecute(Sender: TObject);
-begin
-  ShellExecute(0, 0, PChar(ParamStr(0)), 0, 0, 0);
-end;
-
-procedure TForm1.Panel1Click(Sender: TObject);
-var b: TBArray;
-begin
-  Memo1.Text := IntToStr(BAr2Int(ToBAr(integer(123456), 0, 4), 0, 4));
-end;
+procedure TForm1.ARunCloneExecute(Sender: TObject); begin ShellExecute(0, 0, PChar(ParamStr(0)), 0, 0, 0); end;
 
 procedure TForm1.OnStateChange(Sender: TObject);
 begin
   if Timer1.Enabled then with Sender as TVProtocol do Memo3.Lines.Append(StateMsg);
+end;
+
+procedure TForm1.Button2Click(Sender: TObject);
+begin
+  with IO do begin
+    SendType(cmd_write, 'Testare codif/decodif:', ToAll);
+    SendTime(cmd_write, Time, ToAll);
+    SendType(cmd_write, MyAddr);
+    SendType(cmd_write, 'Q');
+    SendType(cmd_write, word($FFFF));
+    SendType(cmd_write, -1);
+    SendType(cmd_write, $FFFFFFFF);
+    SendType(cmd_write, 123.456789);
+  end;
+end;
+
+procedure TForm1.Button3Click(Sender: TObject);
+begin
+  if Length(tgt)=0 then IO.Send(cmd_write, cmd_clear)
+                   else IO.ListSend(cmd_write, cmd_clear, tgt);
 end;
 
 end.

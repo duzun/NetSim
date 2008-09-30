@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 673
-  Top = 423
+  Left = 696
+  Top = 330
   Width = 465
   Height = 373
   Caption = 'Mini LAN Simulatore'
@@ -20,7 +20,7 @@ object Form1: TForm1
   TextHeight = 13
   object StatusBar1: TStatusBar
     Left = 0
-    Top = 300
+    Top = 302
     Width = 457
     Height = 19
     Panels = <
@@ -46,15 +46,15 @@ object Form1: TForm1
     Left = 0
     Top = 0
     Width = 457
-    Height = 300
-    ActivePage = TabSheet3
+    Height = 302
+    ActivePage = TabSheet1
     Align = alClient
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'Chat'
       DesignSize = (
         449
-        272)
+        274)
       object Memo2: TMemo
         Left = 0
         Top = 0
@@ -87,19 +87,12 @@ object Form1: TForm1
         Height = 272
         Anchors = [akTop, akRight, akBottom]
         TabOrder = 2
-        OnClick = Panel1Click
         DesignSize = (
           145
           272)
         object Label1: TLabel
           Left = 88
           Top = 224
-          Width = 3
-          Height = 13
-        end
-        object Label2: TLabel
-          Left = 88
-          Top = 248
           Width = 3
           Height = 13
         end
@@ -118,8 +111,8 @@ object Form1: TForm1
         end
         object Button4: TButton
           Left = 6
-          Top = 233
-          Width = 75
+          Top = 219
+          Width = 50
           Height = 25
           Anchors = [akRight, akBottom]
           Caption = 'Write'
@@ -129,8 +122,8 @@ object Form1: TForm1
         end
         object Button1: TButton
           Left = 6
-          Top = 201
-          Width = 75
+          Top = 193
+          Width = 50
           Height = 25
           Hint = 'Inchide adresa selectata'
           Anchors = [akRight, akBottom]
@@ -138,36 +131,60 @@ object Form1: TForm1
           TabOrder = 2
           OnClick = Button1Click
         end
-        object CheckBox1: TCheckBox
-          Left = 88
-          Top = 203
-          Width = 49
-          Height = 17
-          Anchors = [akRight, akBottom]
-          Caption = 'Log'
-          TabOrder = 3
-        end
         object MyAddrEdit: TEdit
           Left = 0
           Top = 0
           Width = 145
           Height = 21
           Hint = 'Numele meu'
-          TabOrder = 4
+          TabOrder = 3
           OnExit = MyAddrEditExit
+        end
+        object Button2: TButton
+          Left = 70
+          Top = 192
+          Width = 50
+          Height = 25
+          Caption = 'Test'
+          TabOrder = 4
+          OnClick = Button2Click
+        end
+        object Button3: TButton
+          Left = 70
+          Top = 218
+          Width = 50
+          Height = 25
+          Anchors = [akRight, akBottom]
+          Caption = 'Clear'
+          TabOrder = 5
+          OnClick = Button3Click
         end
       end
     end
     object TabSheet2: TTabSheet
       Caption = 'Info'
       ImageIndex = 2
+      object LInfo: TLabel
+        Left = 0
+        Top = 0
+        Width = 23
+        Height = 13
+        Align = alClient
+        Caption = 'Info'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Verdana'
+        Font.Style = []
+        ParentFont = False
+      end
     end
     object TabSheet3: TTabSheet
       Caption = 'Log'
       ImageIndex = 1
       DesignSize = (
         449
-        272)
+        274)
       object Memo3: TMemo
         Left = 0
         Top = 0
@@ -180,7 +197,7 @@ object Form1: TForm1
         Font.Name = 'Courier'
         Font.Style = []
         ParentFont = False
-        ScrollBars = ssVertical
+        ScrollBars = ssBoth
         TabOrder = 0
         OnDblClick = AClearTextExecute
       end

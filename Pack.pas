@@ -35,9 +35,9 @@ begin
   if(l=0)then begin
     d := Data;
     Insert(cmd, d);
-    Result := ISOForm(d, l, src, tgt);
+    Result := FormFrame(d, l, src, tgt);
   end else begin
-    Result := ISOForm(Data, l, src, tgt);
+    Result := FormFrame(Data, l, src, tgt);
   end;
 end;
 
@@ -45,7 +45,7 @@ procedure TPack.SetBAr(Value: TBArray);
 var r: boolean;
 begin
    p   := 0;
-   r   := ISOSplit(Value, p, len, src, tgt)=0;
+   r   := SplitFrame(Value, p, len, src, tgt)=0;
    SID := BAr2Int(Value, p+len+1, 4);
    if not r then begin
      cmd   := 0;

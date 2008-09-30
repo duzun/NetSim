@@ -22,8 +22,8 @@ function chr2num(c: char):word;
 function num2chr(nm: byte):char;
 function str2byte(byte_str: String): Word;
 function byte2str(bt: word; glow: String = ' '): String;
-function BAr2ByteStr(BAr: TBArray; len: word = 0): string;
-function BAr2Int(BAr: TBArray; p: integer=0; len: word=4): integer;
+
+function Bool2Str(v: boolean):string;
 
 Function  GenBAr(Mask: byte = 0; idx: word = 0;Len: word = $FF): TBArray;
 Procedure FillBAr(var BAr: TBArray; Mask: byte; idx: word = 0;Len: word = $FF);
@@ -31,39 +31,48 @@ Procedure FillBAr(var BAr: TBArray; Mask: byte; idx: word = 0;Len: word = $FF);
 function Copy(var data:TBArray; idx: word = 0; Len: word = 0): TBArray; {Analogic cu Copy pentru String}
 Function Insert(b: TBArray; var BAr: TBArray; idx: word = 0): word;             overload;
 Function Insert(b: byte; var BAr: TBArray; idx: word = 0; Len: word = 1): word; overload;
+Function Join(BAr1: TBArray; BAr2: TBArray): TBArray; overload;
+Function Join(b: Byte; BAr: TBArray; idx: word = 0; len: word = 1): TBArray; overload;
 function BArCmp(a1,a2: PBArray; len: word=0): boolean;           {Compara primele len elemmente din a1 si a2}
 function DecBAr(var BAr: TBArray; l: word = 1): word;            {Elimina l elemente de la coada BAr. return length}
 function IncBAr(var BAr: TBArray; l: word = 1; b: byte=0): word; {Adauga b de l ori la coada BAr. return length}
 function PopBAr(var BAr: TBArray; size: byte = 1): LongWord;     {Arunca ultimul element din BAr de lungimea size:(1..4)}
 function ShiftBAr(var BAr: TBArray; size: byte = 1): LongWord;   {Arunca primul  element din BAr de lungimea size:(1..4)}
-function BAr2Str(s: TBArray):String;
 
-function ToBAr(s: byte; p: word=0):TBArray;     overload;
-function ToBAr(s: char; p: word=0):TBArray;     overload;
-function ToBAr(s: word; p: word=0):TBArray;     overload;
-function ToBAr(s: integer; p: word=0; l:word=4):TBArray; overload;
-function ToBAr(s: longword; p: word=0; l:word=4):TBArray; overload;
-function ToBAr(s: string; p: word=0):TBArray;   overload;
+function BAr2ByteStr(BAr: TBArray; len: word = 0): string;
+function BAr2Int(BAr: TBArray; pos: integer=0; len: word=sizeof(integer)): integer;
+function BAr2Word(BAr: TBArray; pos: integer=0; len: word=sizeof(Word)): Word;
+function BAr2LongWord(BAr: TBArray; pos: integer=0; len: word=sizeof(LongWord)): LongWord;
+function BAr2Double(BAr: TBArray; pos: integer=0; len: word=sizeOf(double)): double;
+function BAr2Str(BAr: TBArray):String;
+
+function ToBAr(s: byte; pos: word=0):TBArray;     overload;
+function ToBAr(s: char; pos: word=0):TBArray;     overload;
+function ToBAr(s: word; pos: word=0):TBArray;     overload;
+function ToBAr(s: integer; pos: word=0; l:word=sizeOf(integer)):TBArray; overload;
+function ToBAr(s: longword; pos: word=0; l:word=sizeOf(longword)):TBArray; overload;
+function ToBAr(s: double; pos: word=0):TBArray;   overload;
+function ToBAr(s: string; pos: word=0):TBArray;   overload;
 
 function ISOLen(data: PBArray; var p: byte): boolean;
 function ISOCmd(data: PBArray; var src, tgt: byte): byte;
 
-function ISOForm(var data: TBArray; var p:word; src:byte=0; tgt:byte=0): TBArray;
+function FormFrame(var data: TBArray; var p:word; src:byte=0; tgt:byte=0): TBArray;
 
-function ISOSplit(var frame: TBArray;var p, len, src, tgt: byte): word;            overload;
-function ISOSplit(var frame: TBArray;var p, len: byte): word;                      overload;
-function ISOSplit(var frame: TBArray;var data: TBArray; var src, tgt: byte): word; overload;
-function ISOSplit(var frame: TBArray;var data: TBArray; var p,len,src,tgt: byte): word; overload;
+function SplitFrame(var frame: TBArray;var p, len, src, tgt: byte): word;            overload;
+function SplitFrame(var frame: TBArray;var p, len: byte): word;                      overload;
+function SplitFrame(var frame: TBArray;var data: TBArray; var src, tgt: byte): word; overload;
+function SplitFrame(var frame: TBArray;var data: TBArray; var p,len,src,tgt: byte): word; overload;
 
-function ArISOForm(var data: TBArray; src:byte=0; tgt:byte=0): TBArArray;
-function ArISOSplit(var frame: TBArArray;var src, tgt: byte): TBArray;
+function ArFormFrame(var data: TBArray; src:byte=0; tgt:byte=0): TBArArray;
+function ArSplitFrame(var frame: TBArArray;var src, tgt: byte): TBArray;
 
 function WriteBAr(var f: BFile;BAr: TBArray; len: word=0): word;
 function ReadBAr(var f: BFile; var BAr: TBArray; len: word=0): word;
 {-----------------------------------------------------------------------------}
 implementation
 {-----------------------------------------------------------------------------}
-function ISOForm(var data: TBArray; var p:word; src:byte=0;tgt:byte=0): TBArray;
+function FormFrame(var data: TBArray; var p:word; src:byte=0;tgt:byte=0): TBArray;
 var r: TBArray;
     i, l: word;
     len, b, chk: byte;
@@ -121,7 +130,7 @@ begin
    Result := r;
 end;
 {-----------------------------------------------------------------------------}
-function ArISOForm(var data: TBArray; src:byte=0;tgt:byte=0): TBArArray;
+function ArFormFrame(var data: TBArray; src:byte=0;tgt:byte=0): TBArArray;
 var p, l: word;
     r: TBArArray;
     i: byte;
@@ -129,11 +138,11 @@ begin
   p:=0;
   l:=Length( data );
   SetLength(r, l div $FF + 1);
-  for i:=0 to Length(r)-1 do r[i] := ISOForm(data, p, src, tgt);
+  for i:=0 to Length(r)-1 do r[i] := FormFrame(data, p, src, tgt);
   Result:=r;
 end;
 {-----------------------------------------------------------------------------}
-function ArISOSplit(var frame: TBArArray;var src, tgt: byte): TBArray;
+function ArSplitFrame(var frame: TBArArray;var src, tgt: byte): TBArray;
 var p, l: word;
     r, d: TBArray;
     i: byte;
@@ -143,7 +152,7 @@ begin
     for i:=0 to l-1 do ;
 end;
 {-----------------------------------------------------------------------------}
-function ISOSplit(var frame: TBArray;var p, len, src, tgt: byte): word;  overload;
+function SplitFrame(var frame: TBArray;var p, len, src, tgt: byte): word;  overload;
 var chc, b: byte;
     i, r: word;
 begin
@@ -186,28 +195,28 @@ begin
   Result := r;
 end;
 {-----------------------------------------------------------------------------}
-function ISOSplit(var frame: TBArray;var data: TBarray; var p, len, src, tgt: byte): word; overload;
+function SplitFrame(var frame: TBArray;var data: TBarray; var p, len, src, tgt: byte): word; overload;
 var i: word;
 begin
-  i := ISOSplit(frame, p, len, src, tgt);
+  i := SplitFrame(frame, p, len, src, tgt);
   if i and (WrongData or WrongLen) = 0 then begin
     data := Copy(frame, p, len);
     Result := 0;
   end else Result := i;
 end;
 {-----------------------------------------------------------------------------}
-function ISOSplit(var frame: TBArray;var data: TBarray; var src, tgt: byte): word; overload;
+function SplitFrame(var frame: TBArray;var data: TBarray; var src, tgt: byte): word; overload;
 var p, len: byte;
-begin p:=0; Result := ISOSplit(frame, data, p, len, src, tgt); end;
+begin p:=0; Result := SplitFrame(frame, data, p, len, src, tgt); end;
 {-----------------------------------------------------------------------------}
-function ISOSplit(var frame: TBArray;var p, len: byte): word;  overload;
+function SplitFrame(var frame: TBArray;var p, len: byte): word;  overload;
 var i: byte;
-begin  Result := ISOSplit(frame, p, len, i, i); end;
+begin  Result := SplitFrame(frame, p, len, i, i); end;
 {-----------------------------------------------------------------------------}
 function ISOCmd;
 var p, len: byte;
 begin
-   ISOSplit(data^, p, len, src, tgt);
+   SplitFrame(data^, p, len, src, tgt);
    Result := data^[p];
 end;
 {-----------------------------------------------------------------------------}
@@ -226,48 +235,63 @@ begin
   Result := true;                              // data len determined :-)
 end;
 {-----------------------------------------------------------------------------}
-function BAr2Str(s: TBArray):String;
+function BAr2Str(BAr: TBArray):String;
 var w: LongWord;
     r: String;
 begin
-  w := length(s);
+  w := length(BAr);
   setLength(r, w);
   while w<>0 do begin
-    r[w] := chr(s[w-1]);
+    r[w] := chr(BAr[w-1]);
     dec(w);
   end;
   Result := r;
 end;
 {---------------------------------------------------------------------------------------------------------}
-function ToBAr(s: byte; p:word=0):TBArray; overload; var r:TBArray; begin setLength(r,p+1); r[p]:=s; Result:=r; end;
-function ToBAr(s: char; p:word=0):TBArray; overload; var r:TBArray; begin setLength(r,p+1); r[p]:=ord(s); Result:=r; end;
-function ToBAr(s: word; p:word=0):TBArray; overload; var r:TBArray; begin setLength(r,p+2); r[p]:=s; r[p+1]:=s shr 8; Result:=r; end;
-function ToBAr(s: longword; p:word=0;l:word=4):TBArray; overload; begin Result := ToBAr(integer(s), p, l); end;
+function ToBAr(s: byte; pos:word=0):TBArray; overload; var r:TBArray; begin setLength(r,pos+1); r[pos]:=s; Result:=r; end;
+function ToBAr(s: char; pos:word=0):TBArray; overload; var r:TBArray; begin setLength(r,pos+1); r[pos]:=ord(s); Result:=r; end;
+function ToBAr(s: word; pos:word=0):TBArray; overload; var r:TBArray; begin setLength(r,pos+2); r[pos]:=s; r[pos+1]:=s shr 8; Result:=r; end;
+function ToBAr(s: longword; pos:word=0;l:word=4):TBArray; overload; begin Result := ToBAr(integer(s), pos, l); end;
 {---------------------------------------------------------------------------------------------------------}
-function ToBAr(s: integer; p:word=0; l:word=4):TBArray; overload;
+function ToBAr(s: integer; pos:word=0; l:word=4):TBArray; overload;
 var r:TBArray; 
 begin
-  setLength(r, p+l);
+  setLength(r, pos+l);
   while(l>0)do begin
-     r[p]:=byte(s); inc(p);
+     r[pos]:=byte(s); inc(pos);
      s := s shr 8;
      dec(l);
   end; 
   Result:=r; 
 end; 
 {---------------------------------------------------------------------------------------------------------}
-function ToBAr(s: string; p:word=0):TBArray;   overload;
+function ToBAr(s: double; pos: word=0):TBArray;   overload;
+var r:TBArray; l: byte; pc: PChar;
+begin
+  l := sizeOf(s);
+  pc := @s;
+  setLength(r, pos+l);
+  while(l>0)do begin
+     dec(l);
+     r[pos+l]:=byte(pc[l]); 
+  end; 
+  Result:=r; 
+end; 
+{---------------------------------------------------------------------------------------------------------}
+function ToBAr(s: string; pos:word=0):TBArray;   overload;
 var w: LongWord;
     r: TBArray;
 begin
   w := length(s);
-  setLength(r, w+p);
+  setLength(r, w+pos);
   while w<>0 do begin
-    r[p+w-1] := ord(s[w]);
+    r[pos+w-1] := ord(s[w]);
     dec(w);
   end;
   Result := r;
-end;  
+end; 
+{---------------------------------------------------------------------------------------------------------}
+function Bool2Str(v: boolean):string; begin if v then Result := 'True' else Result := 'False'; end;
 {---------------------------------------------------------------------------------------------------------}
 { Converts a hexadecimal digit character into its' numerical value                                        }
 {---------------------------------------------------------------------------------------------------------}
@@ -319,17 +343,55 @@ begin
   Result := r;           
 end;
 {-----------------------------------------------------------------------------}
-function BAr2Int(BAr: TBArray; p: integer=0; len: word = 4): integer;
+function BAr2LongWord(BAr: TBArray; pos: integer=0; len: word=sizeof(LongWord)): LongWord;
+var l: integer; 
+    r: longword;
+begin
+  l := Length(BAr);
+  r := 0;
+  if (pos<l) then begin
+    if pos + len > l then len := l - pos;
+    while len > 0 do begin
+       dec(len);
+       r := r shl 8;
+       inc(r, BAr[pos+len]);
+    end;
+  end;
+  Result := r;   
+end;
+{-----------------------------------------------------------------------------}
+function BAr2Int(BAr: TBArray; pos: integer=0; len: word=sizeof(integer)): integer;
 var r, l: integer;
 begin
   l := Length(BAr);
   r := 0;
-  if (p<l) then begin
-    if p + len > l then len := l - p;
+  if (pos<l) then begin
+    if pos + len > l then len := l - pos;
     while len > 0 do begin
        dec(len);
        r := r shl 8;
-       inc(r, BAr[p+len]);
+       inc(r, BAr[pos+len]);
+    end;
+  end;
+  Result := r;   
+end;
+{-----------------------------------------------------------------------------}
+function BAr2Word(BAr: TBArray; pos: integer=0; len: word=sizeof(Word)): Word;
+begin Result := word(BAr2Int(BAr, pos, len)); end; 
+{-----------------------------------------------------------------------------}
+function BAr2Double(BAr: TBArray; pos: integer=0; len: word=sizeOf(double)): double;
+var r: double; 
+    l: integer;
+    pc: PChar;
+begin
+  l := Length(BAr);
+  r := 0;
+  if (pos<l) then begin
+    if pos + len > l then len := l - pos;
+    pc := @r;
+    while len > 0 do begin
+       dec(len);
+       byte(pc[len]) := BAr[pos+len];  
     end;
   end;
   Result := r;   
@@ -440,7 +502,7 @@ begin
   end;
 end;
 {-----------------------------------------------------------------------------}
-Function Insert(b: byte; var BAr: TBArray; idx: word = 0; Len: word = 1): word; overload;
+Function Insert(b: byte; var BAr: TBArray; idx: word = 0; len: word = 1): word; overload;
 var l: word;
 begin
   l:=Length(BAr);
@@ -454,6 +516,31 @@ begin
      inc(l, Len);
      while(idx<l)do begin BAr[idx]:=b; inc(idx); end;
   end;
+end;
+{-----------------------------------------------------------------------------}
+Function Join(BAr1: TBArray; BAr2: TBArray): TBArray; overload;
+var l1, l2: word;
+begin
+  l1:=Length(BAr1);
+  l2:=Length(BAr2);
+  SetLength(BAr1, l1+l2);
+  while(l2>0)do begin dec(l2); BAr1[l1+l2]:=BAr2[l2]; end;
+  Result := BAr1;
+end;
+{-----------------------------------------------------------------------------}
+Function Join(b: Byte; BAr: TBArray; idx: word = 0; len: word = 1): TBArray; overload;
+var l: word;
+begin
+  l:=Length(BAr);
+  if(idx>l)or(len=0)then Result := BAr
+  else begin
+     inc(l, len);
+     SetLength(BAr, l);
+     while(l>idx)do begin dec(l); BAr[l]:=BAr[l-len]; end;
+     inc(l, len);
+     while(idx<l)do begin BAr[idx]:=b; inc(idx); end;
+  end;
+  Result := BAr;
 end;
 {-----------------------------------------------------------------------------}
 Procedure FillBAr;

@@ -5,7 +5,7 @@ uses
   Unit1 in 'Unit1.pas' {Form1},
   Funcs in 'Funcs.pas',
   BufferCl in 'BufferCl.pas',
-  IOStreams in 'IOStreams.pas',
+  IOStream in 'IOStream.pas',
   StrStackCl in 'StrStackCl.pas',
   PrHost in 'PrHost.pas',
   CmdByte in 'CmdByte.pas',

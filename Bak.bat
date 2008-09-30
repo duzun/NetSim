@@ -22,15 +22,19 @@ rem --------------------------------------------------------------------------
     Echo ------------------------------------
     Echo.
     Echo    Make a choice:
+    Echo.
     Echo B: BackUp
     Echo D: Double
     Echo P: Pack (Rar)
     Echo A: ALL (BackUp and Double)
+    Echo.
+    Echo.
     Echo M: Make setting files
-    Echo U: Copy %0 to upper dirs
+    Echo U: Copy %bak_main% to upper dirs
     Echo I: Init vars
     Echo S: Show vars
     Echo C: Cleanse vars
+    Echo.
     Echo E: Exit
     choice /C:ebdpmuscia /T:e,%bak_timeout% /N 
     cls    
@@ -55,11 +59,12 @@ rem --------------------------------------------------------------------------
 goto end
 rem --------------------------------------------------------------------------
 :smain
-    if '%1'=='/meup' %0 /goto meup . -
+    set bak_main=%0
+    if '%1'=='/meup' %bak_main% /goto meup . -
     set my_baks=bak_ext, bak_lng, bak_dir, bak_dsk, bak_dbl_dir, bak_dbl
     set bak_timeout=180
     set bak_log=bak_log.txt
-    set bak_func=call %0 /goto
+    set bak_func=call %bak_main% /goto
         
     if '%1'=='/mkfiles' %bak_func% mkfiles
     If Exist Clearn.bat call Clearn.bat
@@ -182,7 +187,7 @@ rem --------------------------------------------------------------------------
         %bak_func% recur . updirs meup
         goto e    
     )    
-    type %0 > %3\Bak.bat
+    type %bak_main% > %3\Bak.bat
     %bak_func% recur %3 updirs meup
 goto e 
 rem --------------------------------------------------------------------------
@@ -233,6 +238,7 @@ rem --------------------------------------------------------------------------
     set bak_func=
     set bak_log=
     set bak_timeout=
+    set bak_main=
 
 rem pause>nul
 goto cleanse
