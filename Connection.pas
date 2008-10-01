@@ -7,7 +7,7 @@ uses
   ExtCtrls, Classes;
 {-----------------------------------------------------------------------------}
 const
-  c_BaudRate    = 500; // frames/sec : Max = 1000
+  c_BaudRate    = 250; // frames/sec : Max = 1000
   c_Retries     = 10;
   c_Reading     = $1;
   c_Writing     = $2;
@@ -46,7 +46,7 @@ type
     BaudCounter: word;
 
     {Discompunerea Frame-ului primit}
-    Pack :TPack; 
+//     Pack :TPack; 
     p, len, tgt, src:  byte;
     Cycle: integer;
     Data: TBArray;
@@ -72,7 +72,7 @@ type
     procedure OnConect();    virtual;
     procedure OnDisconect(); virtual;
 
-    constructor Create(AOwner: TComponent; NameOfFile: ShortString = '');
+    constructor Create(AOwner: TComponent; NameOfFile: ShortString = ''; BaudR: word = c_BaudRate);
     destructor  Destroy; override;
    end;
 {-----------------------------------------------------------------------------}
@@ -93,7 +93,7 @@ begin
   inherited Create(NameOfFile);
   FOwner          := AOwner;
   OnTimer         := nil;
-  BaudRate        := c_BaudRate;
+  BaudRate        := BaudR;
   Reset_Connection;
 
 //   Pack := TPack.Create(0);

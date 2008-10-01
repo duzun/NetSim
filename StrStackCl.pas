@@ -10,11 +10,11 @@ type
     Success:    Boolean; // Spune daca ultima operatie a avut loc cu succes
   private
     FBuf: TBArArray;
-    FRi, FWi: byte;
+    FRi, FWi: word;
     procedure SetEach(const Value: TBArray);
     function  GetEach: TBArray;
-    function  GetArrays(Index: byte): TBArray;
-    procedure SetArrays(Index: byte; const Value: TBArray);
+    function  GetArrays(Index: word): TBArray;
+    procedure SetArrays(Index: word; const Value: TBArray);
     function  GetSize: word;
     procedure SetSize(const Value: word);
   public
@@ -23,10 +23,10 @@ type
     
     property Size: word read GetSize write SetSize;
     property Each: TBArray read GetEach write SetEach;
-    property Arrays[Index: byte]: TBArray read GetArrays write SetArrays;
+    property Arrays[Index: word]: TBArray read GetArrays write SetArrays;
 
-    function IncR(b: byte = 1): byte;
-    function DecW(b: Byte = 1): Byte;
+    function IncR(b: word = 1): word;
+    function DecW(b: word = 1): word;
     function Read(var BAr: TBArray):  boolean;  {Use Read and Write instead of Each if you}
     function Write(var BAr: TBArray): boolean;  {need to know if the opperation is done   }
 
@@ -71,14 +71,14 @@ begin
   Success   := true;
 end;
 {-----------------------------------------------------------------------------}
-function TStrStack.GetArrays(Index: byte): TBArray;
+function TStrStack.GetArrays;
 begin
    Success := Index<ready;
    if Success then Result := FBuf[FRi+Index]
               else Result := GenBAr(0, 0, 0);
 end;
 {-----------------------------------------------------------------------------}
-procedure TStrStack.SetArrays(Index: byte; const Value: TBArray);
+procedure TStrStack.SetArrays;
 begin
   if(Index<ready) then      // atribuie
   begin
@@ -111,14 +111,14 @@ begin
   end;   
 end;
 {-----------------------------------------------------------------------------}
-function TStrStack.IncR(b: byte): byte;
+function TStrStack.IncR;
 begin
   if(b > FWi - FRi)then b := FWi - FRi;
   inc(FRi, b);
   Result := b;
 end;
 {-----------------------------------------------------------------------------}
-function TStrStack.DecW(b: Byte): Byte;
+function TStrStack.DecW;
 begin
   if(b > FWi - FRi)then b := FWi - FRi;
   dec(FWi, b);

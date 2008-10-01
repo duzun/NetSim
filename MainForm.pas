@@ -264,8 +264,11 @@ procedure TForm1.ACloseExecute(Sender: TObject);
 begin
   if not ToClose then begin
     ToClose := true;
-    Cnter   := 1000 div Timer1.Interval * 5 * IO.MaxAddr;
-    if IO.Conected then IO.Send(cmd_stop, 1, ToAll);
+    Cnter   := IO.BaudRate div Timer1.Interval * IO.MaxAddr * 2;
+    if IO.Conected then begin
+       IO.Send(cmd_stop, 1, ToAll);
+       IO.SendNow(cmd_stop, 1, ToAll);
+    end;
   end;
   if not IO.Disconect then Application.Minimize;
   if IO.Disconect(Cnter=0) then Application.Terminate;

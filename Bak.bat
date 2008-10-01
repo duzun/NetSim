@@ -9,7 +9,7 @@ goto end
 rem --------------------------------------------------------------------------
 :defaults
 rem Defaults   
-if "%bak_ext%."    =="." set bak_ext=pas, c, h, cpp, php, inc, js, bat, cmd, ini, inf, csv, xls, doc, htm, html, exe, dpr, dfm, ppr, cfg, txt, ppt, pptx
+if "%bak_ext%."    =="." set bak_ext=pas, c, h, cpp, php, inc, js, bat, cmd, ini, inf, csv, xls, doc, htm, html, exe, dpr, dfm, ppr, cfg, txt, ppt, pptx, pps, ppsx
 if "%bak_dir%."    =="." set bak_dir=%date%
 if "%bak_subdirs%."=="." set bak_subdirs=
 if "%bak_lng%."    =="." set bak_lng=Streaming

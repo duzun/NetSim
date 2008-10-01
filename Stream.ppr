@@ -27,8 +27,7 @@ Stream
 4=IOStream.pas
 5=Funcs.pas
 6=CmdByte.pas
-7=Stream.dpr
-8=StrStackCl.pas
+7=StrStackCl.pas
 [Selected Project Files]
 Main=
 Selected=GovProtocol.pas
@@ -36,17 +35,17 @@ Selected=GovProtocol.pas
 TopLine=1
 Caret=59,37
 [GovProtocol.pas]
-TopLine=17
-Caret=39,22
+TopLine=185
+Caret=9,215
 [ProtocolBase.pas]
-TopLine=33
+TopLine=11
 Caret=37,11
 [Connection.pas]
-TopLine=25
-Caret=23,59
+TopLine=1
+Caret=31,35
 [IOStream.pas]
-TopLine=37
-Caret=23,55
+TopLine=1
+Caret=56,71
 [Funcs.pas]
 TopLine=1
 Caret=9,1
@@ -57,9 +56,6 @@ Mark4=10,71
 [CmdByte.pas]
 TopLine=5
 Caret=2,32
-[Stream.dpr]
-TopLine=1
-Caret=1,1
 [StrStackCl.pas]
-TopLine=1
-Caret=12,8
+TopLine=5
+Caret=37,27

@@ -18,11 +18,14 @@ uses
   ProtocolBase, IOStream, Funcs, CmdByte, 
   ExtCtrls, Classes, SysUtils;
 {-----------------------------------------------------------------------------}
+const Max_01_silent = 100;
+{-----------------------------------------------------------------------------}
 type
   TGovProtocol = class(TProtocolBase)
      LastAddr: byte;
      RetryCounter: word;
   private
+    ToWrite: boolean;
     StateOnRead: word;
 
   public
@@ -46,13 +49,14 @@ begin
   inherited Create(AOwner, FileName);
   LastAddr := $0;
   Writing  := false;
+  ToWrite  := false;
   OnTimer  := TimerProc;
 end;                                             
 {-----------------------------------------------------------------------------}
 function TGovProtocol.getState: word; begin Result := StateOnRead; end;
 {-----------------------------------------------------------------------------}
 procedure TGovProtocol.OnConect();
-begin
+begin                                                                          
   StateOnRead := 0; // begining 
 //  MyAddr := 0;  
 //   MaxAddr := 0;  
@@ -100,7 +104,7 @@ begin
         cmd_tellMe:
              if (src=$01) then begin
                SendCmdNow(cmd_giveAddr, ToAll);
-               Writing := true;
+               ToWrite := true;
              end;
         cmd_OK or cmd_giveAddr:
              begin
@@ -118,19 +122,19 @@ begin
         case Data[0] of
         cmd_tellMe:
             if(src=$01) then begin
-              SendCmd(cmd_start, ToAll);
-              Writing := true;
+              SendCmdNow(cmd_start, ToAll);
+              ToWrite := true;
               State   := 5;
             end;
         cmd_isPresent:
-            SendCmd(cmd_OK or cmd_isPresent, src);
+            SendCmdNow(cmd_OK or cmd_isPresent, src);
         end;
         {/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/}
     end
   end;
   5:begin  // Citire date
     if(ReadResult=IO_OK)then begin
-      if(src>MaxAddr) then MaxAddr := src;
+      if (src<>ToAll)and(src > MaxAddr) then MaxAddr := src;
       if((src<>MyAddr)and(tgt=MyAddr)or(tgt=ToAll))and(len>0)then
       {/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/}
       case Data[0] of   // parsing commands
@@ -139,19 +143,17 @@ begin
          SendCmdNow(Data[0] or cmd_OK, src);
          
       cmd_start: 
-         begin
            if MaxAddr+1=src then inc(MaxAddr);
-         end;  
          
       cmd_stop: 
          begin
            if MyAddr=MaxAddr then begin
               MyAddr := src;
               SendCmdNow(cmd_readID);
+              dec(MaxAddr);
            end else if MyAddr=$01 then begin
-              Send(cmd_giveAddr or cmd_OK, src, MaxAddr);
+              SendNow(cmd_giveAddr or cmd_OK, src, MaxAddr);
            end;
-           dec(MaxAddr);
          end;
          
       cmd_giveAddr:
@@ -165,9 +167,7 @@ begin
          end;
 
       cmd_tellMe:
-         begin
-            Writing := true;
-         end;
+            ToWrite := true;
       
       cmd_OK or cmd_giveAddr:
          begin
@@ -192,9 +192,28 @@ begin
             IncBAr(LastBAr, 1, src);
             RSBuf.Each := LastBAr;
          end;
+      end else begin  // Cand mesajul nu este adresat mie
+        case Data[0] of
+
+        cmd_OK or cmd_giveAddr:
+           if tgt = MaxAddr then dec(MaxAddr);
+
+        cmd_start: 
+           if MaxAddr+1=src then inc(MaxAddr);
+
+        cmd_stop: 
+           if src = MaxAddr then dec(MaxAddr);
+             
+        end;       
       end;
       {/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/*\*/}
     end;
+      if (NoReadCount >= Max_01_silent) then begin
+      if (Max_01_silent - NoReadCount = (MaxAddr - MyAddr)*Max_01_silent) then begin
+         MaxAddr := MyAddr - 1;
+         MyAddr := $01;                 
+      end;
+   end;    
   end;
   else
      if ReadResult = IO_OK then begin
@@ -210,8 +229,7 @@ begin
       p:=0;
       if ReadResult = IO_OK then begin
         SplitRBAr;
-        if (src<>ToAll)and(src > MaxAddr) then MaxAddr := src;
-        if (tgt<>ToAll)and(tgt > MaxAddr) then MaxAddr := tgt;
+//         if (tgt<>ToAll)and(tgt > MaxAddr) then MaxAddr := tgt;
       end else begin
         len:=0;
         src:=0;
@@ -227,6 +245,7 @@ begin
       end else begin
       
 	  end;
+
    Reading := CanRead;  // --- Read in the next Cycle
    Writing := CanWrite; // --- Write only one frame in the next Cycle ---
 end;
@@ -238,7 +257,7 @@ end;
 {-----------------------------------------------------------------------------}
 function TGovProtocol.CanWrite: boolean;
 begin
-   Result := (MyAddr<>$01) and (CycleCount and 3 = 2) or (MyAddr=$01) and (CycleCount and 3 = 0);
+   Result := (MyAddr<>$01) and (CycleCount and 3 = 2) and ToWrite or (MyAddr=$01) and (CycleCount and 3 = 0);
 end;
 {-----------------------------------------------------------------------------}
 end.
