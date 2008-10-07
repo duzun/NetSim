@@ -9,8 +9,8 @@ uses
 const
   c_BaudRate    = 250; // frames/sec : Max = 1000
   c_Retries     = 10;
-  c_Reading     = $1;
-  c_Writing     = $2;
+  c_Reading     = $01;
+  c_Writing     = $02;
 {-----------------------------------------------------------------------------}
 type
 { Class baza pentru protocoalele de comunicare }
