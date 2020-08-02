@@ -23,4 +23,7 @@
 *.rar binary
 *.zip binary
 *.gz binary
+*.doc binary
+*.docx binary
+*.ppt binary
 
